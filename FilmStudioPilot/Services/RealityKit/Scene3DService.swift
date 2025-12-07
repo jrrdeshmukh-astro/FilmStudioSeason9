@@ -518,27 +518,21 @@ class Scene3DService: ObservableObject {
         // Add emissive for glowing materials
         if config.emissive {
             #if canImport(UIKit)
-            material.emissiveColor = PhysicallyBasedMaterial.EmissiveColor(
-                .init(
-                    tint: UIColor(
-                        red: CGFloat(config.color.r * 0.5),
-                        green: CGFloat(config.color.g * 0.5),
-                        blue: CGFloat(config.color.b * 0.5),
-                        alpha: 1.0
-                    ),
-                    texture: nil
+            material.emissiveColor = MaterialColorParameter(
+                color: UIColor(
+                    red: CGFloat(config.color.r * 0.5),
+                    green: CGFloat(config.color.g * 0.5),
+                    blue: CGFloat(config.color.b * 0.5),
+                    alpha: 1.0
                 )
             )
             #else
-            material.emissiveColor = PhysicallyBasedMaterial.EmissiveColor(
-                .init(
-                    tint: NSColor(
-                        red: CGFloat(config.color.r * 0.5),
-                        green: CGFloat(config.color.g * 0.5),
-                        blue: CGFloat(config.color.b * 0.5),
-                        alpha: 1.0
-                    ),
-                    texture: nil
+            material.emissiveColor = MaterialColorParameter(
+                color: NSColor(
+                    red: CGFloat(config.color.r * 0.5),
+                    green: CGFloat(config.color.g * 0.5),
+                    blue: CGFloat(config.color.b * 0.5),
+                    alpha: 1.0
                 )
             )
             #endif
@@ -726,15 +720,12 @@ class Scene3DService: ObservableObject {
                 ),
                 texture: nil
             )
-            material.emissiveColor = PhysicallyBasedMaterial.EmissiveColor(
-                .init(
-                    tint: UIColor(
-                        red: CGFloat(color.r),
-                        green: CGFloat(color.g),
-                        blue: CGFloat(color.b),
-                        alpha: 1.0
-                    ),
-                    texture: nil
+            material.emissiveColor = MaterialColorParameter(
+                color: UIColor(
+                    red: CGFloat(color.r),
+                    green: CGFloat(color.g),
+                    blue: CGFloat(color.b),
+                    alpha: 1.0
                 )
             )
             #else
@@ -747,15 +738,12 @@ class Scene3DService: ObservableObject {
                 ),
                 texture: nil
             )
-            material.emissiveColor = PhysicallyBasedMaterial.EmissiveColor(
-                .init(
-                    tint: NSColor(
-                        red: CGFloat(color.r),
-                        green: CGFloat(color.g),
-                        blue: CGFloat(color.b),
-                        alpha: 1.0
-                    ),
-                    texture: nil
+            material.emissiveColor = MaterialColorParameter(
+                color: NSColor(
+                    red: CGFloat(color.r),
+                    green: CGFloat(color.g),
+                    blue: CGFloat(color.b),
+                    alpha: 1.0
                 )
             )
             #endif
@@ -772,25 +760,21 @@ class Scene3DService: ObservableObject {
         // Add emotional glow effect
         if isEmotional {
             #if canImport(UIKit)
-            material.emissiveColor = .init(
-                tint: UIColor(
+            material.emissiveColor = MaterialColorParameter(
+                color: UIColor(
                     red: CGFloat(color.r * 0.3),
                     green: CGFloat(color.g * 0.3),
                     blue: CGFloat(color.b * 0.3),
                     alpha: 1.0
-                ),
-                texture: nil
+                )
             )
             #else
-            material.emissiveColor = PhysicallyBasedMaterial.EmissiveColor(
-                .init(
-                    tint: NSColor(
-                        red: CGFloat(color.r * 0.3),
-                        green: CGFloat(color.g * 0.3),
-                        blue: CGFloat(color.b * 0.3),
-                        alpha: 1.0
-                    ),
-                    texture: nil
+            material.emissiveColor = MaterialColorParameter(
+                color: NSColor(
+                    red: CGFloat(color.r * 0.3),
+                    green: CGFloat(color.g * 0.3),
+                    blue: CGFloat(color.b * 0.3),
+                    alpha: 1.0
                 )
             )
             #endif
