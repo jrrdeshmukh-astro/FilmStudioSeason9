@@ -1,0 +1,581 @@
+# FilmStudioPilot - Native Apple Stack Rules
+
+## Core Principle: Zero Third-Party Dependencies
+This app uses **only** Apple's native frameworks and APIs. No third-party UI libraries, video players, or networking libraries. All functionality should be built using Apple's official frameworks.
+
+---
+
+## Tech Stack
+
+### Primary UI Framework
+- **SwiftUI** - Main UI layer for all screens, navigation, forms, lists, dashboards, and pipeline views
+  - Documentation: https://developer.apple.com/documentation/SwiftUI
+  - Tutorials: https://developer.apple.com/tutorials/SwiftUI
+  - App Structure: https://developer.apple.com/tutorials/swiftui-concepts/exploring-the-structure-of-a-swiftui-app
+  - State & Data Flow: https://developer.apple.com/documentation/swiftui/model-data
+  - Controls & Indicators: https://developer.apple.com/documentation/swiftui/controls-and-indicators
+
+### Secondary UI Framework (Power Features)
+- **UIKit** - Only when SwiftUI lacks needed functionality or for deep system integration
+  - Overview: https://developer.apple.com/documentation/uikit
+  - Views & Controls: https://developer.apple.com/documentation/uikit/views-and-controls
+  - UIView Essentials: https://developer.apple.com/documentation/uikit/uiview
+  - Interoperability: https://developer.apple.com/tutorials/swiftui/interfacing-with-uikit
+
+### Media & Video Framework
+- **AVKit** - UI for video playback, controls, PiP, chapters, subtitles
+  - Framework Docs: https://developer.apple.com/documentation/avkit
+  - SwiftUI VideoPlayer: https://developer.apple.com/documentation/avkit/videoplayer
+  - AVPlayerViewController: https://developer.apple.com/documentation/avkit/avplayerviewcontroller
+  - Picture in Picture: https://developer.apple.com/documentation/avkit/adopting-picture-in-picture-in-a-custom-player
+
+- **AVFoundation** - Base media engine for editing, trimming, exporting (non-UI layer)
+  - Programming Guide: https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/AVFoundationPG/
+
+### Design System
+- **Human Interface Guidelines (HIG)** - Apple's design standards
+  - HIG Hub: https://developer.apple.com/design/human-interface-guidelines
+  - Designing for iOS: https://developer.apple.com/design/human-interface-guidelines/designing-for-ios
+  - Components: https://developer.apple.com/design/human-interface-guidelines/components
+  - Navigation & Search: https://developer.apple.com/design/human-interface-guidelines/navigation-and-search
+  - Layout: https://developer.apple.com/design/human-interface-guidelines/layout
+  - Color: https://developer.apple.com/design/human-interface-guidelines/color
+  - Accessibility: https://developer.apple.com/design/human-interface-guidelines/accessibility
+
+### Domain Knowledge (Acting & Film Theory)
+- **Acting Methods Documentation** - Film-school style knowledge base for story generation and analysis
+  - Location: `docs/acting/` directory in project root
+  - Files: `stanislavski.md`, `meisner.md`, `method_strasberg.md`
+  - Purpose: Enable AI to generate and analyze stories using professional acting techniques
+
+**Stanislavski System**
+- Overview: Objectives, "given circumstances," "magic if," bits/beats, superobjective
+- Wikipedia: https://en.wikipedia.org/wiki/Stanislavski%27s_system
+- Practical Guide: https://www.backstage.com/magazine/article/the-definitive-guide-to-the-stanislavsky-acting-technique-65716/
+- Key Concepts: Objectives/obstacles, magic if, beats, inner monologue, emotional memory
+
+**Meisner Technique**
+- Overview: Repetition exercise, focus on partner, living truthfully under imaginary circumstances
+- Wikipedia: https://en.wikipedia.org/wiki/Meisner_technique
+- Practical Guide: https://www.backstage.com/magazine/article/the-definitive-guide-to-the-meisner-technique-67712/
+- Film School Guide: https://www.nfi.edu/meisner-technique/
+- Key Concepts: Repetition, moment-to-moment work, emotional preparation, partner focus
+
+**Strasberg / Method Acting**
+- Official Description: Lee Strasberg Theatre & Film Institute
+- What is Method Acting: https://strasberg.edu/about/what-is-method-acting/
+- Class Descriptions: https://strasberg.edu/los-angeles/about/class-descriptions/
+- Key Concepts: Instrument, sense memory, affective memory, emotional recall
+
+**Usage in App:**
+- Story generation: Label scenes with objectives, obstacles, tactics, beats
+- Performance notes: Direct virtual actors using Meisner/Stanislavski principles
+- Scene analysis: Break down generated content using acting method frameworks
+- Reference in code: `docs/acting/stanislavski.md` for story structure validation
+
+### External APIs (Movie Database & Taste Analysis)
+- **Note:** These are REST APIs accessed via native `URLSession` (no third-party networking libraries)
+- **Purpose:** Enrich user taste profiles, provide movie metadata, build taste clusters
+
+**OMDb API (Open Movie Database)**
+- Documentation: https://www.omdbapi.com/
+- Type: Simple REST JSON
+- Auth: Free API key (email sign-up, request limits)
+- Base URL: `https://www.omdbapi.com/`
+- Key Endpoints:
+  - `?apikey=KEY&t=TITLE` - Get movie by title
+  - `?apikey=KEY&s=SEARCH` - Search multiple movies
+  - `?apikey=KEY&i=IMDB_ID` - Get by IMDb ID
+- Data Provided: Title, year, genres, ratings (IMDb/RottenTomatoes), plot, cast, director
+- Use Case: Quick movie lookups, basic metadata enrichment
+
+**TMDb (The Movie Database) - Primary API**
+- Documentation Hub: https://developer.themoviedb.org/docs/getting-started
+- Getting Started: https://developer.themoviedb.org/reference/getting-started
+- Type: REST API v3/v4
+- Auth: Free account + API key (Bearer token or api_key param)
+- Base URL: `https://api.themoviedb.org/3`
+- Key Endpoints:
+  - `GET /movie/popular` - Popular movies
+  - `GET /trending/movie/week` - Trending movies (taste signals)
+  - `GET /movie/{movie_id}` - Full movie details
+  - `GET /movie/{movie_id}/similar` - Similar movies
+  - `GET /movie/{movie_id}/recommendations` - Recommendations
+  - `GET /search/movie` - Search movies
+- Data Provided: Movies, TV, people, images, keywords, genres, watch providers, trending data
+- Use Case: Primary source for taste analysis, trending data, recommendations, genre clustering
+
+**Additional Taste APIs (Optional)**
+- TasteDive API: Similar movies/music/games based on title (mood neighborhoods)
+- Trakt API: User watch history, trending charts, social viewing stats
+- Reference: https://apidog.com/blog/free-movie-apis/
+
+**API Integration Architecture:**
+- Use native `URLSession` for all HTTP requests
+- Implement protocol-based design for multiple API support
+- Cache responses appropriately using `URLCache`
+- Handle rate limiting and error states gracefully
+- Store API keys securely (not in code - use environment/config)
+
+---
+
+## Feature-to-Framework Mapping
+
+### Onboarding & Taste Selection
+- **SwiftUI Forms** - Use `Form`, `Toggle`, `Slider`, `Picker`
+- **Navigation** - Use `NavigationStack` or `NavigationSplitView`
+- **State Management** - Use `@State`, `@Observable`, `@Environment`
+- **API Integration** - Use `MovieMetadataService` to fetch trending/popular movies for selection
+- **Taste Analysis** - Build initial `TasteProfile` from user selections using TMDb genre/keyword data
+- Reference: SwiftUI Controls & Indicators, HIG Components, TMDb API docs
+
+### Story Ideas Home Feed
+- **Lists** - Use SwiftUI `List`, `ScrollView`, `LazyVStack`
+- **Navigation** - Use `NavigationLink`, `NavigationStack`
+- **Data Display** - Use `ForEach`, `AsyncImage` for thumbnails
+- Reference: Core SwiftUI documentation, HIG Navigation patterns
+
+### Project / Pipeline Dashboard
+- **Layout** - Use `VStack`, `HStack`, `Grid`, `LazyVGrid`
+- **Progress Indicators** - Use `ProgressView`, `Gauge`
+- **Custom Views** - Build with SwiftUI view composition
+- Reference: HIG Layout guidelines, SwiftUI Controls
+
+### Playback and Review Screen
+- **Video Playback** - Use SwiftUI `VideoPlayer` (AVKit) for standard playback
+- **Advanced Controls** - Use `AVPlayerViewController` wrapped in `UIViewControllerRepresentable` if needed
+- **Picture in Picture** - Implement via `AVPictureInPictureController`
+- Reference: AVKit documentation, SwiftUI-UIKit interoperability
+
+### Settings / Preferences
+- **Forms** - Use SwiftUI `Form` with `Toggle`, `Picker`, `TextField`
+- **Navigation** - Use `NavigationStack` with settings sections
+- Reference: SwiftUI Controls, HIG Components
+
+---
+
+## Code Style Guidelines
+
+### SwiftUI Best Practices
+1. **State Management**
+   - Prefer `@Observable` macro for model classes (iOS 17+)
+   - Use `@State` for local view state
+   - Use `@Environment` for system values and app-wide state
+   - Use `@Query` for SwiftData models
+
+2. **View Composition**
+   - Break complex views into smaller, reusable components
+   - Use view modifiers for styling
+   - Leverage SF Symbols for icons
+   - Use system typography and colors
+
+3. **Navigation**
+   - Use `NavigationStack` for iOS 16+ (preferred)
+   - Use `NavigationSplitView` for iPad/Mac multi-column layouts
+   - Follow HIG navigation patterns
+
+4. **Performance**
+   - Use `LazyVStack`, `LazyHStack`, `LazyGrid` for large lists
+   - Use `AsyncImage` for remote images
+   - Avoid unnecessary view updates
+
+### UIKit Integration
+- Only use UIKit when SwiftUI cannot provide needed functionality
+- Always wrap UIKit views/controllers in `UIViewRepresentable` or `UIViewControllerRepresentable`
+- Maintain SwiftUI-first architecture
+
+### Media Handling
+- Use `VideoPlayer` for standard playback needs
+- Use `AVPlayerViewController` only when advanced controls are required
+- Implement PiP for background playback during editing
+- Use AVFoundation for media processing (trimming, exporting, etc.)
+
+### Design & Accessibility
+- Follow HIG guidelines for spacing, typography, and colors
+- Support Dark Mode using semantic colors
+- Ensure all interactive elements meet accessibility standards
+- Use VoiceOver labels and hints
+- Test with Dynamic Type
+
+---
+
+## Documentation Reference Strategy
+
+When implementing features:
+1. **First** - Check SwiftUI documentation for built-in solutions
+2. **Second** - Check HIG for design patterns and best practices
+3. **Third** - Check AVKit/AVFoundation for media-specific needs
+4. **Last Resort** - Use UIKit with SwiftUI wrappers only when necessary
+
+Always prefer:
+- Native SwiftUI components over custom implementations
+- System-provided icons (SF Symbols) over custom assets
+- System typography and colors over custom styling
+- Built-in accessibility features over custom solutions
+
+---
+
+## Project Structure
+
+```
+FilmStudioPilot/
+├── Views/
+│   ├── Onboarding/
+│   ├── StoryIdeas/
+│   ├── Pipeline/
+│   ├── Playback/
+│   └── Settings/
+├── Models/
+│   ├── StoryIdea.swift
+│   ├── Pipeline.swift
+│   ├── Project.swift
+│   ├── MovieMetadata.swift
+│   └── TasteProfile.swift
+├── ViewModels/ (if using MVVM pattern)
+├── Services/
+│   ├── MediaService.swift (AVFoundation)
+│   ├── AIService.swift (AI/LLM integration)
+│   ├── MovieMetadataService.swift (TMDb/OMDb wrapper)
+│   ├── TasteAnalysisService.swift (taste clustering & analysis)
+│   └── StoryAnalyzer.swift (uses acting method docs)
+├── Network/
+│   ├── APIClient.swift (base URLSession wrapper)
+│   ├── TMDbClient.swift (TMDb API implementation)
+│   ├── OMDbClient.swift (OMDb API implementation)
+│   └── Models/
+│       ├── TMDbModels.swift
+│       └── OMDbModels.swift
+├── Utilities/
+│   ├── Extensions/
+│   └── Helpers/
+└── docs/ (domain knowledge for AI context)
+    └── acting/
+        ├── stanislavski.md
+        ├── meisner.md
+        └── method_strasberg.md
+```
+
+---
+
+## API Integration Patterns
+
+### Network Layer Architecture
+
+**Base API Client Protocol**
+- Create a protocol-based design to support multiple movie APIs
+- Use native `URLSession` for all HTTP requests
+- Implement proper error handling and retry logic
+- Support async/await patterns (iOS 15+)
+
+**Example Structure:**
+```swift
+protocol MovieAPIClient {
+    func searchMovies(query: String) async throws -> [MovieMetadata]
+    func getMovieDetails(id: String) async throws -> MovieMetadata
+    func getTrendingMovies() async throws -> [MovieMetadata]
+}
+
+// TMDb implementation
+class TMDbClient: MovieAPIClient {
+    private let apiKey: String
+    private let baseURL = "https://api.themoviedb.org/3"
+    
+    func getTrendingMovies() async throws -> [TMDbMovie] {
+        // URLSession implementation
+    }
+}
+
+// OMDb implementation  
+class OMDbClient: MovieAPIClient {
+    private let apiKey: String
+    private let baseURL = "https://www.omdbapi.com"
+    
+    func searchMovies(query: String) async throws -> [OMDbMovie] {
+        // URLSession implementation
+    }
+}
+```
+
+**Data Models**
+- Create Swift `Codable` structs matching API responses
+- Use `CodingKeys` for API naming conventions (snake_case → camelCase)
+- Handle optional fields gracefully
+- Map to unified app models (`MovieMetadata`, `TasteProfile`)
+
+**Error Handling**
+- Define custom error types for API failures
+- Handle rate limiting (429 responses)
+- Implement exponential backoff for retries
+- Provide user-friendly error messages
+
+**Caching Strategy**
+- Use `URLCache` for HTTP response caching
+- Cache trending data for short periods (15-30 minutes)
+- Cache movie details longer (24 hours)
+- Invalidate cache on user actions (new likes, etc.)
+
+### Taste Analysis Architecture
+
+**TasteProfile Model**
+- Track user's liked movies, genres, themes
+- Build taste vectors from TMDb genre IDs, keywords, popularity scores
+- Cluster similar tastes using genre/keyword similarity
+- Update profile based on user interactions
+
+**TrendingTasteEngine**
+- Pull from `GET /trending/movie/week` endpoint
+- Combine with user's watchlist/likes
+- Build taste clusters (genre-based, theme-based, mood-based)
+- Generate story prompts aligned with user's taste profile
+
+**Integration Points:**
+- Onboarding: Use taste selection to seed initial profile
+- Story Generation: Reference taste clusters when generating ideas
+- Recommendations: Use TMDb similar/recommendations endpoints
+- Discovery: Show trending movies matching user's taste profile
+
+### API Key Management & Security
+
+**Storage:**
+- **Never** commit API keys to version control
+- Use Xcode build configuration files (`.xcconfig`) for different environments
+- Store keys in `Info.plist` or environment variables
+- Consider using Keychain for sensitive keys (though API keys are less sensitive than auth tokens)
+
+**Best Practices:**
+```swift
+// Example: Load from Info.plist
+struct APIKeys {
+    static var tmdbKey: String {
+        guard let path = Bundle.main.path(forResource: "Info", ofType: "plist"),
+              let plist = NSDictionary(contentsOfFile: path),
+              let key = plist["TMDbAPIKey"] as? String else {
+            fatalError("TMDb API key not found in Info.plist")
+        }
+        return key
+    }
+}
+```
+
+**Rate Limiting:**
+- Respect API rate limits (TMDb: 40 requests per 10 seconds)
+- Implement request queuing/throttling
+- Cache responses to minimize API calls
+- Monitor API usage and provide user feedback if limits are hit
+
+**Error Handling:**
+- Handle 401 (unauthorized) - invalid/expired API key
+- Handle 429 (too many requests) - rate limit exceeded
+- Handle network errors gracefully
+- Provide fallback behavior when APIs are unavailable
+
+---
+
+## Domain Knowledge Integration
+
+### Using Acting Method Documentation
+
+**File Structure:**
+- Store acting method docs in `docs/acting/` directory
+- Each file should contain:
+  - Key concepts and definitions
+  - Core exercises and techniques
+  - Practical application guidelines
+  - Scene analysis frameworks
+
+**Integration in Code:**
+
+**Story Generation:**
+```swift
+// StoryAnalyzer.swift should reference acting method docs
+// When generating scenes, ensure each has:
+// - Clear objective (Stanislavski)
+// - Obstacles and tactics
+// - Beats (scene breakdown)
+// - Character motivations
+```
+
+**Performance Notes:**
+```swift
+// When generating performance direction:
+// - Use Meisner focus on partner behavior
+// - Apply Stanislavski emotional memory techniques
+// - Reference Method Acting sense memory when appropriate
+```
+
+**Scene Analysis:**
+```swift
+// Analyze generated content using acting frameworks:
+// - Break scenes into beats
+// - Identify character objectives
+// - Map obstacles and tactics
+// - Validate emotional truth (Meisner)
+```
+
+**Prompt Engineering:**
+- Reference `docs/acting/stanislavski.md` in AI prompts for story structure
+- Use `docs/acting/meisner.md` for performance direction
+- Apply `docs/acting/method_strasberg.md` for deep character work
+- Example: "Generate a scene following Stanislavski principles: each character must have a clear objective, obstacle, and tactics. Break the scene into beats per the guidelines in `docs/acting/stanislavski.md`."
+
+**Best Practices:**
+- Keep doc files concise (summaries, not full copies)
+- Use headings and bullet points for easy parsing
+- Include practical examples and exercises
+- Update docs as new acting techniques are integrated
+- Reference docs in code comments when applying techniques
+
+**Markdown File Structure Template:**
+```markdown
+# [Acting Method Name]
+
+## Core Principles
+- Key concept 1
+- Key concept 2
+
+## Key Techniques
+### Technique Name
+- Description
+- How to apply
+- Example usage
+
+## Scene Analysis Framework
+- Step 1: Identify...
+- Step 2: Map...
+- Step 3: Validate...
+
+## Practical Application
+- Exercise 1
+- Exercise 2
+```
+
+**Content Guidelines:**
+- Summarize in your own words (avoid copyright issues)
+- Focus on actionable concepts for story generation
+- Include scene breakdown frameworks
+- Provide clear examples of application
+- Keep each file under 500-1000 words for easy AI parsing
+
+---
+
+## Import Statements
+
+Standard imports for this project:
+```swift
+import SwiftUI          // Primary UI
+import SwiftData        // Data persistence
+import AVKit            // Video playback UI
+import AVFoundation      // Media processing
+import UIKit            // Only when needed for UIKit integration
+```
+
+---
+
+## Testing Considerations
+
+- Test on multiple iOS versions (minimum iOS 16+ for modern SwiftUI features)
+- Test on iPhone and iPad (use `NavigationSplitView` for adaptive layouts)
+- Test Dark Mode and Light Mode
+- Test with Dynamic Type (accessibility)
+- Test Picture in Picture functionality
+- Test video playback in various scenarios
+
+---
+
+## When to Reference Documentation
+
+### Apple Framework Docs
+- **Building new screens** → SwiftUI Tutorials, HIG Components
+- **State management issues** → SwiftUI Model Data documentation
+- **Navigation problems** → HIG Navigation & Search, SwiftUI NavigationStack
+- **Video playback** → AVKit documentation, VideoPlayer
+- **Media processing** → AVFoundation Programming Guide
+- **Design questions** → HIG Layout, Color, Typography
+- **Accessibility** → HIG Accessibility guidelines
+- **UIKit integration** → SwiftUI-UIKit Interoperability tutorial
+
+### Domain Knowledge & APIs
+- **Story generation** → `docs/acting/stanislavski.md` for scene structure (objectives, obstacles, beats)
+- **Performance direction** → `docs/acting/meisner.md` for actor guidance
+- **Character development** → `docs/acting/method_strasberg.md` for deep character work
+- **Scene analysis** → All acting method docs for breaking down generated content
+- **Movie API integration** → TMDb Getting Started docs, OMDb API docs
+- **Taste analysis** → TMDb trending/recommendations endpoints documentation
+- **API error handling** → URLSession documentation, HTTP status code handling
+
+---
+
+## Anti-Patterns to Avoid
+
+❌ **Don't** use third-party UI libraries (Alamofire, Kingfisher, etc.)
+❌ **Don't** use third-party video players
+❌ **Don't** create custom UI components when SwiftUI provides them
+❌ **Don't** ignore HIG guidelines
+❌ **Don't** skip accessibility features
+❌ **Don't** use UIKit when SwiftUI can handle it
+❌ **Don't** hardcode colors - use semantic colors
+❌ **Don't** ignore Dark Mode support
+
+✅ **Do** use native SwiftUI components
+✅ **Do** follow HIG design patterns
+✅ **Do** implement accessibility from the start
+✅ **Do** use system icons and typography
+✅ **Do** test on multiple device sizes
+✅ **Do** support Dark Mode
+✅ **Do** use semantic colors
+
+---
+
+## Quick Reference Links
+
+### Apple Frameworks
+
+**SwiftUI**
+- Main Docs: https://developer.apple.com/documentation/SwiftUI
+- Tutorials: https://developer.apple.com/tutorials/SwiftUI
+
+**AVKit**
+- Framework: https://developer.apple.com/documentation/avkit
+- VideoPlayer: https://developer.apple.com/documentation/avkit/videoplayer
+
+**HIG**
+- Main Hub: https://developer.apple.com/design/human-interface-guidelines
+- iOS Design: https://developer.apple.com/design/human-interface-guidelines/designing-for-ios
+
+**AVFoundation**
+- Programming Guide: https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/AVFoundationPG/
+
+### External APIs
+
+**TMDb (The Movie Database)**
+- Getting Started: https://developer.themoviedb.org/docs/getting-started
+- API Reference: https://developer.themoviedb.org/reference/getting-started
+- Movie Details: https://developer.themoviedb.org/reference/movie-details
+- Trending Endpoint: `GET /trending/movie/week`
+
+**OMDb (Open Movie Database)**
+- API Documentation: https://www.omdbapi.com/
+- Base URL: `https://www.omdbapi.com/`
+
+**Additional Movie APIs**
+- Free Movie APIs Roundup: https://apidog.com/blog/free-movie-apis/
+
+### Domain Knowledge (Acting Methods)
+
+**Stanislavski System**
+- Wikipedia: https://en.wikipedia.org/wiki/Stanislavski%27s_system
+- Backstage Guide: https://www.backstage.com/magazine/article/the-definitive-guide-to-the-stanislavsky-acting-technique-65716/
+
+**Meisner Technique**
+- Wikipedia: https://en.wikipedia.org/wiki/Meisner_technique
+- Backstage Guide: https://www.backstage.com/magazine/article/the-definitive-guide-to-the-meisner-technique-67712/
+- NY Film Institute: https://www.nfi.edu/meisner-technique/
+
+**Method Acting (Strasberg)**
+- Official Site: https://strasberg.edu/about/what-is-method-acting/
+- Class Descriptions: https://strasberg.edu/los-angeles/about/class-descriptions/
+
+---
+
+This rules file ensures all code suggestions and implementations align with Apple's native frameworks and design guidelines, maintaining a zero third-party dependency architecture.
+
