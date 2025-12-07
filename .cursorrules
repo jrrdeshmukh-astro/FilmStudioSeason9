@@ -3,6 +3,14 @@
 ## Core Principle: Zero Third-Party Dependencies
 This app uses **only** Apple's native frameworks and APIs. No third-party UI libraries, video players, or networking libraries. All functionality should be built using Apple's official frameworks.
 
+## Core Interaction Model: Apple TV-Like Experience
+**User Experience Philosophy:**
+- Users interact with the app like **Apple TV** - browse, watch, discover content
+- **Productions happen automatically in the background** - no manual project creation
+- **Story generation is triggered by observable media state changes** - watching, liking, skipping, pausing patterns
+- Users consume finished productions, not manage pipelines
+- The app observes user behavior and generates personalized content automatically
+
 ---
 
 ## Tech Stack
@@ -31,6 +39,77 @@ This app uses **only** Apple's native frameworks and APIs. No third-party UI lib
 
 - **AVFoundation** - Base media engine for editing, trimming, exporting (non-UI layer)
   - Programming Guide: https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/AVFoundationPG/
+
+### 3D & Spatial Framework
+- **RealityKit** - 3D scenes, AR experiences, spatial visualization for storyboards and production planning
+  - Framework Docs: https://developer.apple.com/documentation/realitykit
+  - Getting Started: https://developer.apple.com/documentation/realitykit/getting-started-with-realitykit
+  - SwiftUI Integration: https://developer.apple.com/documentation/realitykit/creating-3d-content-with-realitykit
+  - ARView: https://developer.apple.com/documentation/realitykit/arview
+  - Entity & Components: https://developer.apple.com/documentation/realitykit/entity
+  - Scene Understanding: https://developer.apple.com/documentation/realitykit/scene-understanding
+  - Spatial Audio: https://developer.apple.com/documentation/realitykit/spatial-audio
+
+**Usage in App:**
+- 3D storyboard visualization
+- AR scene preview
+- Virtual set planning
+- Spatial storyboard exploration
+- 3D animatic generation
+
+### DirectorKit SDK (AI-Assisted Film Direction)
+- **Purpose**: High-level orchestration layer for turning screenplays into directed sequences of shots
+- **Core Functionality**:
+  - Visual detailing (camera, framing, blocking, timing)
+  - Dialogue detailing (who speaks, to whom, under what conditions)
+  - Integration with Open Screenplay Format (OSF)
+  - AVFoundation composition for timeline & video export
+- **Data Models**:
+  - `DirectorProject`: Complete film project with screenplay and directed scenes
+  - `Screenplay`: Screenplay data with OSF XML support
+  - `DirectedScene`: Scene broken down into shots with camera setups
+  - `Shot`: Individual shot with camera, framing, dialogue, and timing
+  - `AssetCatalog`: Video, audio, image, and 3D model assets
+- **Services**:
+  - `DirectorKitService`: Orchestrates screenplay-to-shots conversion
+  - `OSFParser`: Parses and generates Open Screenplay Format XML
+- **Integration Points**:
+  - RealityKit: 3D scene visualization and blocking
+  - AVFoundation: Timeline composition and video export
+  - Production Pipeline: Automatic direction from story ideas
+
+**Usage in App:**
+- Convert story ideas to screenplays
+- Generate directed scenes with camera setups
+- Plan blocking and character movement
+- Create AVComposition timelines
+- Export final productions
+
+### Voice Over & Dialogue Rigging
+- **Purpose**: Professional voice over system with character backstory integration and dialogue timing
+- **Core Functionality**:
+  - Character backstory with Stanislavski objectives, relationships, and emotional range
+  - Voice profile generation (pitch, pace, timbre, accent)
+  - Dialogue rigging with timing, pauses, emphasis points
+  - Emotional delivery based on character context
+  - Acting technique integration (Stanislavski, Meisner, Method)
+- **Data Models**:
+  - `CharacterBackstory`: Complete character development with biography, objectives, relationships
+  - `VoiceProfile`: Voice characteristics and emotional delivery patterns
+  - `DialogueRigging`: Dialogue timing, pauses, emphasis, and delivery instructions
+- **Services**:
+  - `VoiceOverService`: Generates dialogue rigging from character backstory and dialogue
+- **Integration Points**:
+  - DirectorKit: Uses character backstory for dialogue shot timing
+  - Acting Methods: Applies Stanislavski objectives and Meisner partner focus
+  - AVFoundation: Audio timing for voice over tracks
+
+**Usage in App:**
+- Generate character backstories from story ideas
+- Create voice profiles based on character traits
+- Rig dialogue with proper timing and emotional delivery
+- Integrate with DirectorKit for shot planning
+- Export voice over tracks for final production
 
 ### Design System
 - **Human Interface Guidelines (HIG)** - Apple's design standards
@@ -72,6 +151,25 @@ This app uses **only** Apple's native frameworks and APIs. No third-party UI lib
 - Performance notes: Direct virtual actors using Meisner/Stanislavski principles
 - Scene analysis: Break down generated content using acting method frameworks
 - Reference in code: `docs/acting/stanislavski.md` for story structure validation
+
+### Observable Media State & Automatic Production
+- **Media Observation** - Track user media consumption patterns to trigger story generation
+- **State Changes** - Observe watching, pausing, skipping, liking, completion patterns
+- **Automatic Triggers** - Story generation happens when state changes indicate new preferences
+- **Background Production** - Productions are created and processed automatically, released when ready
+- **Framework:** Use `@Observable` macro for media state models, Combine for state observation
+
+**Key Observable States:**
+- `MediaWatchState` - tracks what user is watching, how long, completion rate
+- `MediaInteractionState` - tracks likes, skips, pauses, replays
+- `MediaPreferenceState` - derived from consumption patterns
+- `ProductionState` - tracks background production pipeline status
+
+**State Change Triggers:**
+- User completes a production → analyze patterns → generate new story
+- User skips multiple productions → adjust taste profile → generate different style
+- User watches same production multiple times → identify strong preference → generate similar content
+- User pauses at specific moments → identify emotional beats → incorporate in future stories
 
 ### External APIs (Movie Database & Taste Analysis)
 - **Note:** These are REST APIs accessed via native `URLSession` (no third-party networking libraries)
@@ -121,34 +219,61 @@ This app uses **only** Apple's native frameworks and APIs. No third-party UI lib
 
 ## Feature-to-Framework Mapping
 
-### Onboarding & Taste Selection
-- **SwiftUI Forms** - Use `Form`, `Toggle`, `Slider`, `Picker`
+### Onboarding & Initial Taste Setup
+- **SwiftUI Forms** - Use `Form`, `Toggle`, `Slider`, `Picker` for initial preferences
 - **Navigation** - Use `NavigationStack` or `NavigationSplitView`
 - **State Management** - Use `@State`, `@Observable`, `@Environment`
 - **API Integration** - Use `MovieMetadataService` to fetch trending/popular movies for selection
 - **Taste Analysis** - Build initial `TasteProfile` from user selections using TMDb genre/keyword data
 - Reference: SwiftUI Controls & Indicators, HIG Components, TMDb API docs
 
-### Story Ideas Home Feed
-- **Lists** - Use SwiftUI `List`, `ScrollView`, `LazyVStack`
-- **Navigation** - Use `NavigationLink`, `NavigationStack`
-- **Data Display** - Use `ForEach`, `AsyncImage` for thumbnails
-- Reference: Core SwiftUI documentation, HIG Navigation patterns
+### Browse & Discover (Apple TV-Like Home Screen)
+- **Hero Carousel** - Use SwiftUI `TabView` with page style for featured productions
+- **Content Rows** - Use `ScrollView` with `LazyHStack` for horizontal scrolling rows
+- **Categories** - "For You", "Trending", "Recently Released", "Similar to What You Watched"
+- **Poster Grid** - Use `LazyVGrid` with `AsyncImage` for production thumbnails
+- **Navigation** - Use `NavigationLink` for deep linking into production details
+- **State Observation** - Use `@Observable` to track browsing patterns
+- Reference: Core SwiftUI documentation, HIG Navigation patterns, Apple TV design patterns
 
-### Project / Pipeline Dashboard
-- **Layout** - Use `VStack`, `HStack`, `Grid`, `LazyVGrid`
-- **Progress Indicators** - Use `ProgressView`, `Gauge`
-- **Custom Views** - Build with SwiftUI view composition
+### Production Detail Screen
+- **Hero Image/Video** - Large poster or preview video at top
+- **Metadata Display** - Title, genre, duration, release date
+- **Description** - Story synopsis, generated using acting method frameworks
+- **Play Button** - Prominent play action (like Apple TV)
+- **Related Productions** - Similar content recommendations
+- **Layout** - Use `ScrollView` with `VStack` for vertical content
 - Reference: HIG Layout guidelines, SwiftUI Controls
 
-### Playback and Review Screen
+### Playback Screen (Full Screen Video Experience)
 - **Video Playback** - Use SwiftUI `VideoPlayer` (AVKit) for standard playback
-- **Advanced Controls** - Use `AVPlayerViewController` wrapped in `UIViewControllerRepresentable` if needed
-- **Picture in Picture** - Implement via `AVPictureInPictureController`
+- **Full Screen** - Native full-screen video experience like Apple TV
+- **Advanced Controls** - Use `AVPlayerViewController` wrapped in `UIViewControllerRepresentable` for system controls
+- **Picture in Picture** - Implement via `AVPictureInPictureController` for background viewing
+- **State Tracking** - Observe playback state (playing, paused, completed, skipped) to trigger story generation
+- **Auto-play Next** - Automatically suggest next production when current completes
 - Reference: AVKit documentation, SwiftUI-UIKit interoperability
+
+### Background Production Pipeline (Automatic)
+- **Production Engine** - Runs automatically based on observable media state changes
+- **Pipeline Stages** - Story → Script → Storyboard → Animatic → Final Production
+- **Progress Tracking** - Use `@Observable` models to track production status
+- **Notification System** - Notify user when new productions are ready (using native notifications)
+- **Layout** - Hidden from main UI, accessible via Settings or "My Productions" section
+- Reference: HIG Layout guidelines, SwiftUI Controls, Background Tasks
+
+### 3D Storyboard & AR Preview
+- **RealityKit Views** - Use `RealityView` (SwiftUI) or `ARView` (UIKit wrapper) for 3D visualization
+- **Scene Composition** - Build 3D scenes from storyboard data
+- **AR Preview** - Preview scenes in AR using ARKit + RealityKit
+- **Spatial Planning** - Virtual set layout and camera positioning
+- **3D Animatics** - Animated 3D storyboards with camera movements
+- Reference: RealityKit documentation, ARKit integration, SwiftUI-ARKit interoperability
 
 ### Settings / Preferences
 - **Forms** - Use SwiftUI `Form` with `Toggle`, `Picker`, `TextField`
+- **Production Preferences** - Control automatic generation frequency, genre preferences
+- **Viewing History** - See what you've watched, liked, skipped
 - **Navigation** - Use `NavigationStack` with settings sections
 - Reference: SwiftUI Controls, HIG Components
 
@@ -221,23 +346,63 @@ Always prefer:
 FilmStudioPilot/
 ├── Views/
 │   ├── Onboarding/
-│   ├── StoryIdeas/
-│   ├── Pipeline/
+│   ├── Browse/ (Apple TV-like home screen)
+│   │   ├── HomeView.swift
+│   │   ├── ProductionRowView.swift
+│   │   ├── HeroCarouselView.swift
+│   │   └── CategorySectionView.swift
+│   ├── ProductionDetail/
+│   │   ├── ProductionDetailView.swift
+│   │   └── ProductionMetadataView.swift
 │   ├── Playback/
+│   │   ├── VideoPlayerView.swift
+│   │   └── PlaybackControlsView.swift
+│   ├── RealityKit/
+│   │   ├── Storyboard3DView.swift (3D scene visualization)
+│   │   ├── Storyboard3DListView.swift (list of 3D scenes)
+│   │   └── ARPreviewView.swift (AR preview of scenes)
 │   └── Settings/
 ├── Models/
+│   ├── Production.swift (completed productions for viewing)
 │   ├── StoryIdea.swift
-│   ├── Pipeline.swift
-│   ├── Project.swift
+│   ├── Pipeline.swift (background processing stages)
 │   ├── MovieMetadata.swift
-│   └── TasteProfile.swift
+│   ├── TasteProfile.swift
+│   ├── Observable/
+│   │   ├── MediaWatchState.swift (@Observable)
+│   │   ├── ProductionState.swift (@Observable)
+│   │   ├── MediaInteractionState.swift (@Observable)
+│   │   └── ProductionEngine.swift (@Observable)
+│   ├── RealityKit/
+│   │   └── Scene3D.swift (3D scene models)
+│   └── DirectorKit/
+│       ├── DirectorProject.swift
+│       ├── Screenplay.swift
+│       ├── DirectedScene.swift
+│       └── AssetCatalog.swift
+│   └── VoiceOver/
+│       ├── CharacterBackstory.swift
+│       ├── VoiceProfile.swift
+│       └── DialogueRigging.swift
 ├── ViewModels/ (if using MVVM pattern)
 ├── Services/
 │   ├── MediaService.swift (AVFoundation)
 │   ├── AIService.swift (AI/LLM integration)
 │   ├── MovieMetadataService.swift (TMDb/OMDb wrapper)
 │   ├── TasteAnalysisService.swift (taste clustering & analysis)
-│   └── StoryAnalyzer.swift (uses acting method docs)
+│   ├── StoryAnalyzer.swift (uses acting method docs)
+│   ├── ProductionEngineService.swift (background production orchestration)
+│   ├── RealityKit/
+│   │   └── Scene3DService.swift (3D scene generation and RealityKit entity building)
+│   └── DirectorKit/
+│       ├── DirectorKitService.swift (screenplay-to-shots orchestration)
+│       └── OSFParser.swift (Open Screenplay Format XML parsing)
+│   └── VoiceOver/
+│       └── VoiceOverService.swift (dialogue rigging and voice profile generation)
+├── Observers/
+│   ├── MediaStateObserver.swift (observes MediaWatchState changes)
+│   ├── ProductionTriggerObserver.swift (triggers story generation)
+│   └── TasteProfileObserver.swift (updates taste profile from state)
 ├── Network/
 │   ├── APIClient.swift (base URLSession wrapper)
 │   ├── TMDbClient.swift (TMDb API implementation)
@@ -458,6 +623,130 @@ struct APIKeys {
 
 ---
 
+## Automatic Production Workflow (Background Process)
+
+### Observable Media State Architecture
+
+**State Observation Pattern:**
+```swift
+@Observable
+class MediaWatchState {
+    var currentProduction: Production?
+    var watchProgress: Double = 0.0
+    var isPlaying: Bool = false
+    var completedProductions: [Production] = []
+    var skippedProductions: [Production] = []
+    var likedProductions: [Production] = []
+    var pauseMoments: [TimeInterval] = []
+}
+
+@Observable
+class ProductionEngine {
+    var activeProductions: [Production] = []
+    var queuedStories: [StoryIdea] = []
+    
+    func observeStateChanges(_ state: MediaWatchState) {
+        // Trigger story generation based on state changes
+    }
+}
+```
+
+### State Change Triggers & Story Generation
+
+**Trigger 1: Production Completion**
+- User finishes watching a production
+- State change: `watchProgress` reaches 1.0, `completedProductions` updated
+- Action: Analyze completion patterns → Generate similar story
+- Implementation: `ProductionEngine` observes `MediaWatchState.completedProductions` changes
+
+**Trigger 2: Multiple Skips**
+- User skips 3+ productions in a row
+- State change: `skippedProductions` count increases
+- Action: Adjust taste profile → Generate different genre/style
+- Implementation: Observe `skippedProductions` array changes
+
+**Trigger 3: Repeat Viewing**
+- User watches same production multiple times
+- State change: Production appears multiple times in watch history
+- Action: Identify strong preference → Generate similar content
+- Implementation: Track production view count in `MediaWatchState`
+
+**Trigger 4: Pause Pattern Analysis**
+- User pauses at specific emotional moments
+- State change: `pauseMoments` array populated
+- Action: Identify emotional beats → Incorporate in future stories
+- Implementation: Observe `pauseMoments` changes, analyze timing patterns
+
+**Trigger 5: Like/Dislike Patterns**
+- User likes certain productions, skips others
+- State change: `likedProductions` vs `skippedProductions` ratio
+- Action: Refine taste profile → Generate aligned content
+- Implementation: Compare liked vs skipped patterns
+
+### Automatic Production Pipeline
+
+**Stage 1: Story Generation (Triggered by State Change)**
+1. `ProductionEngine` detects state change
+2. `StoryAnalyzer` references `docs/acting/stanislavski.md`
+3. `AIService` generates story using:
+   - Current `TasteProfile` (updated from state observations)
+   - Acting method frameworks
+   - State change context (what triggered generation)
+4. Story added to `queuedStories`
+
+**Stage 2: Background Processing**
+- Production moves through pipeline automatically:
+  - Story → Script → Storyboard → Animatic → Final Production
+- Each stage processes in background
+- Status tracked via `@Observable` `ProductionState`
+- User not interrupted during viewing
+
+**Stage 3: Release for Viewing**
+- When production completes, added to "Recently Released" category
+- User sees new content in browse feed
+- Notification sent (optional, user preference)
+- Production becomes available for viewing
+
+### User Experience Flow
+
+**Primary Flow (Apple TV-Like):**
+1. User opens app → Sees browse feed (like Apple TV home)
+2. User browses categories → "For You", "Trending", "New Releases"
+3. User taps production → Sees detail screen
+4. User taps "Play" → Full-screen video playback
+5. User watches → State changes observed automatically
+6. User completes/skips → Triggers background story generation
+7. New productions appear → User discovers in feed (no manual creation)
+
+**Background Flow (Automatic):**
+1. State change detected → `ProductionEngine` triggered
+2. Story generated → Based on observable patterns
+3. Production pipeline → Processes automatically
+4. Production completes → Released to browse feed
+5. User discovers → In next browsing session
+
+### Implementation Notes
+
+**State Observation:**
+- Use `@Observable` macro for reactive state models
+- Use Combine publishers for cross-component state observation
+- Implement `onChange` modifiers to react to state changes
+- Background tasks for production processing (using `BGTaskScheduler`)
+
+**Performance:**
+- Production processing happens in background
+- State observation is lightweight and efficient
+- Cache generated stories to avoid regeneration
+- Batch state changes to avoid excessive triggers
+
+**User Control:**
+- Settings allow users to control generation frequency
+- Users can pause automatic generation
+- Users can view "My Productions" to see what's being created
+- Users can manually trigger generation if desired
+
+---
+
 ## Import Statements
 
 Standard imports for this project:
@@ -466,7 +755,13 @@ import SwiftUI          // Primary UI
 import SwiftData        // Data persistence
 import AVKit            // Video playback UI
 import AVFoundation      // Media processing
+import CoreMedia        // Media timeline and composition
+import RealityKit       // 3D scenes and AR experiences
+import ARKit            // AR capabilities (when using ARView)
+import Combine          // State observation and reactive programming
 import UIKit            // Only when needed for UIKit integration
+import BackgroundTasks  // Background production processing
+import Foundation       // XML parsing and utilities
 ```
 
 ---
@@ -502,6 +797,17 @@ import UIKit            // Only when needed for UIKit integration
 - **Movie API integration** → TMDb Getting Started docs, OMDb API docs
 - **Taste analysis** → TMDb trending/recommendations endpoints documentation
 - **API error handling** → URLSession documentation, HTTP status code handling
+- **DirectorKit** → Open Screenplay Format (OSF) specification: https://github.com/OpenScreenplayFormat/osf-sdk
+- **AVFoundation Composition** → AVFoundation Programming Guide, AVMutableComposition documentation
+- **Timeline editing** → Core Media framework for time-based media composition
+
+### Observable State & Reactive Patterns
+- **State observation** → SwiftUI `@Observable` macro, `onChange` modifier
+- **Reactive programming** → Combine framework for state observation
+- **Background tasks** → `BGTaskScheduler` for production processing
+- **State management** → SwiftUI Model Data documentation for `@Observable`
+- **Media state tracking** → AVKit playback state observation
+- **Pattern recognition** → Combine operators for analyzing state changes
 
 ---
 
@@ -523,6 +829,141 @@ import UIKit            // Only when needed for UIKit integration
 ✅ **Do** test on multiple device sizes
 ✅ **Do** support Dark Mode
 ✅ **Do** use semantic colors
+
+---
+
+## Example User Workflow (Apple TV-Like Experience)
+
+### Day 1: First Launch & Onboarding
+
+**Step 1: Initial Setup**
+- User opens app for first time
+- Onboarding screen: Select 10-15 movies they like
+- App builds initial `TasteProfile` from selections
+- User enters main browse screen
+
+**Step 2: Browse Feed (Like Apple TV)**
+- Home screen shows:
+  - **Hero Carousel**: Featured productions
+  - **For You**: Personalized recommendations
+  - **Trending**: Popular productions
+  - **New Releases**: Recently completed productions
+- User scrolls through rows, taps on interesting production
+
+**Step 3: Production Detail**
+- User sees production detail screen:
+  - Large poster/thumbnail
+  - Title, genre, duration
+  - Story synopsis (generated using acting methods)
+  - "Play" button (prominent, like Apple TV)
+- User taps "Play"
+
+**Step 4: Watch Production**
+- Full-screen video playback (AVKit `VideoPlayer`)
+- User watches entire production
+- **State Observation Happening:**
+  - `MediaWatchState.watchProgress` updates
+  - `MediaWatchState.isPlaying` = true
+  - Playback position tracked
+
+**Step 5: Production Completes**
+- User finishes watching
+- **State Change Detected:**
+  - `watchProgress` reaches 1.0
+  - Production added to `completedProductions`
+  - `ProductionTriggerObserver` detects change
+
+**Step 6: Automatic Story Generation (Background)**
+- `ProductionEngine` triggered by state change
+- Analyzes completed production patterns
+- Generates new story aligned with user's taste
+- Story added to background production pipeline
+- User sees "Next Up" suggestion (auto-play next)
+
+### Day 2: Discovery & Pattern Building
+
+**Step 7: Browse New Content**
+- User opens app next day
+- Sees new productions in "For You" section
+- Some generated from previous day's viewing patterns
+
+**Step 8: Skip Pattern**
+- User skips 2 productions quickly
+- **State Change:**
+  - Productions added to `skippedProductions`
+  - `MediaInteractionState` updated
+- **Automatic Response:**
+  - `TasteProfileObserver` adjusts preferences
+  - Next generation will avoid skipped styles
+
+**Step 9: Like & Pause Patterns**
+- User finds production they like
+- Pauses at emotional moments (3 times)
+- **State Observation:**
+  - `pauseMoments` array populated: [0:45, 1:23, 2:15]
+  - Production added to `likedProductions`
+- **Automatic Analysis:**
+  - Emotional beats identified
+  - Similar beats will be incorporated in future stories
+
+**Step 10: Background Production**
+- While user browses, production engine:
+  - Processes story from Day 1 completion
+  - Moves through: Script → Storyboard → Animatic
+  - Status tracked but hidden from user
+  - User continues browsing/watching
+
+### Day 3: New Release Discovery
+
+**Step 11: Production Released**
+- Background production completes
+- Added to "New Releases" category
+- User discovers it naturally while browsing
+- No notification (unless user enabled)
+
+**Step 12: Repeat Viewing**
+- User watches same production twice
+- **State Change:**
+  - Production view count = 2
+  - Strong preference signal
+- **Automatic Response:**
+  - `ProductionEngine` generates similar story
+  - Same genre, similar themes, matching emotional beats
+
+### Ongoing: Continuous Refinement
+
+**Step 13: Pattern Recognition**
+- App observes:
+  - User always watches sci-fi to completion
+  - User skips romance productions
+  - User pauses at action sequences
+- **Automatic Adaptation:**
+  - Taste profile refined continuously
+  - Future productions align with patterns
+  - User never manually adjusts anything
+
+**Step 14: Perfect Personalization**
+- After weeks of use:
+  - Every production in "For You" is highly relevant
+  - User rarely skips
+  - Productions match emotional preferences
+  - All driven by observable state changes
+
+### Key Differences from Manual Workflow
+
+**Old Model (Manual):**
+- User creates project
+- User manages pipeline
+- User writes story
+- User edits script
+- User reviews each stage
+
+**New Model (Apple TV-Like):**
+- User browses and watches
+- Productions happen automatically
+- Stories generated from state changes
+- User discovers finished content
+- Zero manual project management
 
 ---
 

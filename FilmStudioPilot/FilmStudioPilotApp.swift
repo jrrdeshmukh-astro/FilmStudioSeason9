@@ -12,7 +12,14 @@ import SwiftData
 struct FilmStudioPilotApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            Production.self,
+            StoryIdea.self,
+            TasteProfile.self,
+            DirectorProject.self,
+            Screenplay.self,
+            DirectedScene.self,
+            AssetCatalog.self,
+            CharacterBackstory.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
