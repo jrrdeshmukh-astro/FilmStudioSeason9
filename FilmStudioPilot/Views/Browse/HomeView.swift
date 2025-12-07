@@ -11,7 +11,7 @@ import SwiftData
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var productions: [Production]
-    @StateObject private var productionState = ProductionState()
+    @State private var productionState = ProductionState()
     
     var body: some View {
         NavigationStack {

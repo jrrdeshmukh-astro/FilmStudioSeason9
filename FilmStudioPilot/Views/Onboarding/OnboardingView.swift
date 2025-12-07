@@ -7,6 +7,12 @@
 
 import SwiftUI
 import SwiftData
+#if canImport(UIKit)
+import UIKit
+#endif
+#if canImport(AppKit)
+import AppKit
+#endif
 
 struct OnboardingView: View {
     @Environment(\.modelContext) private var modelContext
@@ -60,7 +66,11 @@ struct OnboardingView: View {
                     TextField("Search movies or genres...", text: $searchText)
                 }
                 .padding()
-                .background(Color(.systemGray6))
+                #if canImport(UIKit)
+                .background(Color(uiColor: .systemGray6))
+                #else
+                .background(Color(NSColor.controlBackgroundColor))
+                #endif
                 .cornerRadius(10)
                 .padding(.horizontal)
                 

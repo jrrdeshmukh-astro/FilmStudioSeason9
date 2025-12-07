@@ -14,8 +14,8 @@ struct VideoPlayerView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     
-    @StateObject private var watchState = MediaWatchState()
-    @StateObject private var interactionState = MediaInteractionState()
+    @State private var watchState = MediaWatchState()
+    @State private var interactionState = MediaInteractionState()
     @State private var player: AVPlayer?
     @State private var isPlaying = false
     
