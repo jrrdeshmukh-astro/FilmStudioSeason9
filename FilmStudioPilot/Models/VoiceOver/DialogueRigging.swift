@@ -11,12 +11,18 @@ import AVFoundation
 struct DialogueRigging: Codable, Identifiable {
     let id: UUID
     var dialogueBlock: DialogueBlock
-    var characterBackstory: CharacterBackstory?
+    var characterBackstoryID: UUID? // Store ID instead of full object (CharacterBackstory is SwiftData @Model)
     var voiceProfile: VoiceProfile
     var timing: DialogueTiming
     var emotionalContext: EmotionalContext
     var deliveryInstructions: DeliveryInstructions
     var audioAsset: AudioAsset?
+    
+    // Non-Codable property for runtime use
+    var characterBackstory: CharacterBackstory? {
+        get { nil } // Will be resolved from SwiftData using characterBackstoryID
+        set { characterBackstoryID = newValue?.id }
+    }
     
     init(
         id: UUID = UUID(),
@@ -30,7 +36,7 @@ struct DialogueRigging: Codable, Identifiable {
     ) {
         self.id = id
         self.dialogueBlock = dialogueBlock
-        self.characterBackstory = characterBackstory
+        self.characterBackstoryID = characterBackstory?.id
         self.voiceProfile = voiceProfile
         self.timing = timing
         self.emotionalContext = emotionalContext

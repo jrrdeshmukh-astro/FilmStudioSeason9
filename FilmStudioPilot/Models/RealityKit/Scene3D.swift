@@ -7,6 +7,7 @@
 
 import Foundation
 import RealityKit
+import UIKit
 
 struct Scene3D: Identifiable, Codable {
     let id: UUID

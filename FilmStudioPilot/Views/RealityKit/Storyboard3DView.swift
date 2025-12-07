@@ -18,20 +18,21 @@ struct Storyboard3DView: View {
             let scene = service.buildRealityKitScene(from: scene3D)
             content.add(scene)
             
-            // Configure camera
-            let camera = PerspectiveCamera()
-            camera.position = simd_float3(
+            // Configure camera using PerspectiveCamera
+            let cameraEntity = PerspectiveCamera()
+            cameraEntity.position = simd_float3(
                 scene3D.cameraPosition.x,
                 scene3D.cameraPosition.y,
                 scene3D.cameraPosition.z
             )
-            camera.fieldOfView = scene3D.cameraPosition.fieldOfView
-            content.add(camera)
             
-            // Set camera as active
-            if let cameraEntity = content.entities.first(where: { $0 is PerspectiveCamera }) as? PerspectiveCamera {
-                // Camera is now active
+            // Set camera field of view via camera component
+            if var cameraComponent = cameraEntity.components[PerspectiveCameraComponent.self] {
+                cameraComponent.fieldOfView = scene3D.cameraPosition.fieldOfView
+                cameraEntity.components.set(cameraComponent)
             }
+            
+            content.add(cameraEntity)
         } update: { content in
             // Update scene if needed
         }
