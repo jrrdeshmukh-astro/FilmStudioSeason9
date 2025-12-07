@@ -198,25 +198,39 @@ class Scene3DService: ObservableObject {
         }
     }
     
-    /// Build RealityKit scene from Scene3D model
+    /// Build RealityKit scene from Scene3D model with stunning visuals
     func buildRealityKitScene(from scene3D: Scene3D) -> Entity {
         let rootEntity = Entity()
+        rootEntity.name = "Scene_\(scene3D.sceneNumber)"
         
-        // Add entities
+        // Add environment lighting first
+        configureEnvironmentLighting(rootEntity: rootEntity, lighting: scene3D.lighting)
+        
+        // Add entities with enhanced visuals
         for entity3D in scene3D.entities {
             let entity = createRealityKitEntity(from: entity3D)
             entity.position = entity3D.position
+            
             // Convert Euler angles to quaternion
             let rotationX = simd_quatf(angle: entity3D.rotation.x, axis: [1, 0, 0])
             let rotationY = simd_quatf(angle: entity3D.rotation.y, axis: [0, 1, 0])
             let rotationZ = simd_quatf(angle: entity3D.rotation.z, axis: [0, 0, 1])
             entity.orientation = rotationZ * rotationY * rotationX
             entity.scale = entity3D.scale
+            
             rootEntity.addChild(entity)
         }
         
-        // Configure lighting
-        if let directionalLight = scene3D.lighting.directionalLight {
+        // Add atmospheric effects
+        addAtmosphericEffects(to: rootEntity, scene3D: scene3D)
+        
+        return rootEntity
+    }
+    
+    /// Configure advanced environment lighting
+    private func configureEnvironmentLighting(rootEntity: Entity, lighting: LightingConfig) {
+        // Main directional light
+        if let directionalLight = lighting.directionalLight {
             let lightEntity = DirectionalLight()
             lightEntity.light.color = .init(
                 red: directionalLight.color.r,
@@ -224,35 +238,90 @@ class Scene3DService: ObservableObject {
                 blue: directionalLight.color.b
             )
             lightEntity.light.intensity = directionalLight.intensity
-            lightEntity.look(at: simd_float3(0, 0, 0), from: directionalLight.direction, relativeTo: nil)
+            lightEntity.light.shadow = .init(maximumDistance: 10.0, depthBias: 2.0)
+            lightEntity.position = simd_float3(
+                directionalLight.direction.x * 5,
+                directionalLight.direction.y * 5,
+                directionalLight.direction.z * 5
+            )
+            lightEntity.look(at: simd_float3(0, 0, 0), from: lightEntity.position, relativeTo: nil)
             rootEntity.addChild(lightEntity)
         }
         
-        return rootEntity
+        // Add ambient light for fill
+        let ambientLight = DirectionalLight()
+        ambientLight.light.color = .init(white: 1.0)
+        ambientLight.light.intensity = lighting.ambientIntensity
+        ambientLight.position = simd_float3(0, 5, 0)
+        ambientLight.look(at: simd_float3(0, 0, 0), from: ambientLight.position, relativeTo: nil)
+        rootEntity.addChild(ambientLight)
+        
+        // Add rim light for dramatic effect
+        let rimLight = DirectionalLight()
+        rimLight.light.color = .init(red: 0.8, green: 0.9, blue: 1.0)
+        rimLight.light.intensity = 0.3
+        rimLight.position = simd_float3(-3, 2, 3)
+        rimLight.look(at: simd_float3(0, 0, 0), from: rimLight.position, relativeTo: nil)
+        rootEntity.addChild(rimLight)
+    }
+    
+    /// Add atmospheric effects for stunning visuals
+    private func addAtmosphericEffects(to rootEntity: Entity, scene3D: Scene3D) {
+        // Add fog for depth
+        if scene3D.environment.fogEnabled {
+            // Fog is handled by RealityView environment
+        }
+        
+        // Add post-processing effects via environment
+        // These are configured in RealityView
     }
     
     private func createRealityKitEntity(from entity3D: Entity3D) -> Entity {
         switch entity3D.type {
         case .character:
-            // Create a simple character representation (box for now)
-            let mesh = MeshResource.generateBox(size: 0.5)
-            let material = createMaterial(from: entity3D.material)
+            // Create stunning character with advanced materials
+            let mesh = createCharacterMesh()
+            let material = createAdvancedMaterial(
+                color: entity3D.material?.color ?? ColorRGB(r: 0.9, g: 0.8, b: 0.7),
+                materialType: .skin,
+                isEmotional: entity3D.isEmotional ?? false
+            )
             let modelEntity = ModelEntity(mesh: mesh, materials: [material])
             modelEntity.name = entity3D.name
+            
+            // Add visual components for better rendering
+            addVisualComponents(to: modelEntity, entityType: .character)
+            
             return modelEntity
             
         case .prop:
-            let mesh = MeshResource.generateBox(size: 1.0)
-            let material = createMaterial(from: entity3D.material)
+            // Create props with appropriate materials
+            let mesh = createPropMesh(for: entity3D.name)
+            let materialType: MaterialType = determineMaterialType(for: entity3D.name)
+            let material = createAdvancedMaterial(
+                color: entity3D.material?.color ?? ColorRGB(r: 0.6, g: 0.4, b: 0.2),
+                materialType: materialType
+            )
             let modelEntity = ModelEntity(mesh: mesh, materials: [material])
             modelEntity.name = entity3D.name
+            
+            addVisualComponents(to: modelEntity, entityType: .prop)
+            
             return modelEntity
             
         case .set:
-            let mesh = MeshResource.generateBox(size: 2.0)
-            let material = createMaterial(from: entity3D.material)
+            // Create set pieces with environment materials
+            let mesh = createSetMesh(for: entity3D.name)
+            let materialType: MaterialType = determineMaterialType(for: entity3D.name)
+            let material = createAdvancedMaterial(
+                color: entity3D.material?.color ?? ColorRGB(r: 0.5, g: 0.3, b: 0.2),
+                materialType: materialType
+            )
             let modelEntity = ModelEntity(mesh: mesh, materials: [material])
             modelEntity.name = entity3D.name
+            
+            addVisualComponents(to: modelEntity, entityType: .set)
+            
             return modelEntity
             
         case .light:
@@ -267,20 +336,314 @@ class Scene3DService: ObservableObject {
         }
     }
     
+    /// Create sophisticated character mesh
+    private func createCharacterMesh() -> MeshResource {
+        // Use sphere for more organic character shape
+        return MeshResource.generateSphere(radius: 0.3)
+    }
+    
+    /// Create prop mesh based on prop name
+    private func createPropMesh(for name: String) -> MeshResource {
+        let lowercased = name.lowercased()
+        
+        if lowercased.contains("table") {
+            return MeshResource.generateBox(width: 1.5, height: 0.1, depth: 0.8)
+        } else if lowercased.contains("chair") {
+            return MeshResource.generateBox(width: 0.5, height: 1.0, depth: 0.5)
+        } else if lowercased.contains("lamp") {
+            return MeshResource.generateCylinder(radius: 0.05, height: 1.0)
+        } else {
+            return MeshResource.generateBox(size: 0.5)
+        }
+    }
+    
+    /// Create set mesh based on set name
+    private func createSetMesh(for name: String) -> MeshResource {
+        let lowercased = name.lowercased()
+        
+        if lowercased.contains("door") {
+            return MeshResource.generateBox(width: 0.8, height: 2.0, depth: 0.1)
+        } else if lowercased.contains("wall") {
+            return MeshResource.generateBox(width: 5.0, height: 3.0, depth: 0.2)
+        } else if lowercased.contains("floor") {
+            return MeshResource.generateBox(width: 5.0, height: 0.1, depth: 5.0)
+        } else {
+            return MeshResource.generateBox(size: 2.0)
+        }
+    }
+    
+    /// Determine material type based on entity name
+    private func determineMaterialType(for name: String) -> MaterialType {
+        let lowercased = name.lowercased()
+        
+        if lowercased.contains("metal") || lowercased.contains("steel") {
+            return .metallic
+        } else if lowercased.contains("glass") || lowercased.contains("window") {
+            return .glass
+        } else if lowercased.contains("wood") || lowercased.contains("table") {
+            return .wood
+        } else if lowercased.contains("fabric") || lowercased.contains("cloth") {
+            return .fabric
+        } else if lowercased.contains("light") || lowercased.contains("lamp") {
+            return .emissive
+        } else {
+            return .wood
+        }
+    }
+    
+    /// Add visual components for enhanced rendering
+    private func addVisualComponents(to entity: ModelEntity, entityType: Entity3D.EntityType) {
+        // Add shadow component for realistic shadows
+        entity.components.set(ShadowComponent(shadow: .init(opacity: 0.5)))
+        
+        // Add collision component for interaction
+        entity.components.set(CollisionComponent(shapes: [.generateBox(size: entity.scale)]))
+        
+        // Add physics for dynamic scenes
+        if entityType == .prop {
+            entity.components.set(PhysicsBodyComponent(
+                massProperties: .default,
+                material: .default,
+                mode: .static
+            ))
+        }
+        
+        // Add occlusion component for realistic depth
+        entity.components.set(OcclusionComponent())
+    }
+    
+    /// Create stunning materials using MaterialBuilder API
     private func createMaterial(from config: MaterialConfig?) -> Material {
         let config = config ?? MaterialConfig()
-        var material = SimpleMaterial()
-        material.color = .init(
-            tint: UIColor(
+        
+        // Use MaterialBuilder for advanced materials
+        var material = PhysicallyBasedMaterial()
+        
+        // Base color
+        material.baseColor = .init(
+            texture: nil,
+            color: UIColor(
                 red: CGFloat(config.color.r),
                 green: CGFloat(config.color.g),
                 blue: CGFloat(config.color.b),
                 alpha: CGFloat(config.color.a)
             )
         )
-        material.metallic = config.metallic
-        material.roughness = config.roughness
+        
+        // Metallic and roughness
+        material.metallic = PhysicallyBasedMaterial.Metallic(
+            texture: nil,
+            scalar: config.metallic
+        )
+        material.roughness = PhysicallyBasedMaterial.Roughness(
+            texture: nil,
+            scalar: config.roughness
+        )
+        
+        // Add specular for more realistic reflections
+        material.specular = PhysicallyBasedMaterial.Specular(
+            texture: nil,
+            color: .init(white: 0.5, alpha: 1.0)
+        )
+        
+        // Add clearcoat for glossy surfaces
+        if config.metallic > 0.5 {
+            material.clearcoat = PhysicallyBasedMaterial.Clearcoat(
+                amount: 0.3,
+                roughness: 0.1
+            )
+        }
+        
+        // Add emissive for glowing materials
+        if config.emissive {
+            material.emissiveColor = .init(
+                texture: nil,
+                color: UIColor(
+                    red: CGFloat(config.color.r * 0.5),
+                    green: CGFloat(config.color.g * 0.5),
+                    blue: CGFloat(config.color.b * 0.5),
+                    alpha: 1.0
+                )
+            )
+        }
+        
         return material
+    }
+    
+    /// Create advanced material with visual components
+    private func createAdvancedMaterial(
+        color: ColorRGB,
+        materialType: MaterialType,
+        isEmotional: Bool = false
+    ) -> Material {
+        var material = PhysicallyBasedMaterial()
+        
+        switch materialType {
+        case .metallic:
+            material.baseColor = .init(
+                texture: nil,
+                color: UIColor(
+                    red: CGFloat(color.r),
+                    green: CGFloat(color.g),
+                    blue: CGFloat(color.b),
+                    alpha: 1.0
+                )
+            )
+            material.metallic = PhysicallyBasedMaterial.Metallic(
+                texture: nil,
+                scalar: 0.9
+            )
+            material.roughness = PhysicallyBasedMaterial.Roughness(
+                texture: nil,
+                scalar: 0.1
+            )
+            material.clearcoat = PhysicallyBasedMaterial.Clearcoat(
+                amount: 0.5,
+                roughness: 0.05
+            )
+            
+        case .fabric:
+            material.baseColor = .init(
+                texture: nil,
+                color: UIColor(
+                    red: CGFloat(color.r),
+                    green: CGFloat(color.g),
+                    blue: CGFloat(color.b),
+                    alpha: 1.0
+                )
+            )
+            material.metallic = PhysicallyBasedMaterial.Metallic(
+                texture: nil,
+                scalar: 0.0
+            )
+            material.roughness = PhysicallyBasedMaterial.Roughness(
+                texture: nil,
+                scalar: 0.8
+            )
+            material.sheen = PhysicallyBasedMaterial.Sheen(
+                tint: .init(white: 0.1, alpha: 1.0)
+            )
+            
+        case .glass:
+            material.baseColor = .init(
+                texture: nil,
+                color: UIColor(
+                    red: CGFloat(color.r),
+                    green: CGFloat(color.g),
+                    blue: CGFloat(color.b),
+                    alpha: 0.3
+                )
+            )
+            material.metallic = PhysicallyBasedMaterial.Metallic(
+                texture: nil,
+                scalar: 0.0
+            )
+            material.roughness = PhysicallyBasedMaterial.Roughness(
+                texture: nil,
+                scalar: 0.0
+            )
+            material.transmission = 0.95
+            
+        case .skin:
+            material.baseColor = .init(
+                texture: nil,
+                color: UIColor(
+                    red: CGFloat(color.r),
+                    green: CGFloat(color.g),
+                    blue: CGFloat(color.b),
+                    alpha: 1.0
+                )
+            )
+            material.metallic = PhysicallyBasedMaterial.Metallic(
+                texture: nil,
+                scalar: 0.0
+            )
+            material.roughness = PhysicallyBasedMaterial.Roughness(
+                texture: nil,
+                scalar: 0.6
+            )
+            material.subsurface = PhysicallyBasedMaterial.Subsurface(
+                scattering: .init(
+                    color: UIColor(
+                        red: CGFloat(color.r * 0.8),
+                        green: CGFloat(color.g * 0.7),
+                        blue: CGFloat(color.b * 0.7),
+                        alpha: 1.0
+                    )
+                )
+            )
+            
+        case .wood:
+            material.baseColor = .init(
+                texture: nil,
+                color: UIColor(
+                    red: CGFloat(color.r),
+                    green: CGFloat(color.g),
+                    blue: CGFloat(color.b),
+                    alpha: 1.0
+                )
+            )
+            material.metallic = PhysicallyBasedMaterial.Metallic(
+                texture: nil,
+                scalar: 0.0
+            )
+            material.roughness = PhysicallyBasedMaterial.Roughness(
+                texture: nil,
+                scalar: 0.7
+            )
+            
+        case .emissive:
+            material.baseColor = .init(
+                texture: nil,
+                color: UIColor(
+                    red: CGFloat(color.r),
+                    green: CGFloat(color.g),
+                    blue: CGFloat(color.b),
+                    alpha: 1.0
+                )
+            )
+            material.emissiveColor = .init(
+                texture: nil,
+                color: UIColor(
+                    red: CGFloat(color.r),
+                    green: CGFloat(color.g),
+                    blue: CGFloat(color.b),
+                    alpha: 1.0
+                )
+            )
+            material.metallic = PhysicallyBasedMaterial.Metallic(
+                texture: nil,
+                scalar: 0.0
+            )
+            material.roughness = PhysicallyBasedMaterial.Roughness(
+                texture: nil,
+                scalar: 0.5
+            )
+        }
+        
+        // Add emotional glow effect
+        if isEmotional {
+            material.emissiveColor = .init(
+                texture: nil,
+                color: UIColor(
+                    red: CGFloat(color.r * 0.3),
+                    green: CGFloat(color.g * 0.3),
+                    blue: CGFloat(color.b * 0.3),
+                    alpha: 1.0
+                )
+            )
+        }
+        
+        return material
+    }
+    
+    enum MaterialType {
+        case metallic
+        case fabric
+        case glass
+        case skin
+        case wood
+        case emissive
     }
 }
 

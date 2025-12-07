@@ -158,19 +158,7 @@ struct EmotionalContext: Codable {
     }
 }
 
-enum Emotion: String, Codable {
-    case neutral = "neutral"
-    case joy = "joy"
-    case sadness = "sadness"
-    case anger = "anger"
-    case fear = "fear"
-    case surprise = "surprise"
-    case disgust = "disgust"
-    case contempt = "contempt"
-    case love = "love"
-    case shame = "shame"
-    case guilt = "guilt"
-}
+// Emotion enum is defined in CharacterBackstory.swift
 
 struct RelationshipContext: Codable {
     var otherCharacter: String

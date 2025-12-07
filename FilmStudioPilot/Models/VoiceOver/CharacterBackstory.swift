@@ -152,6 +152,7 @@ struct EmotionalRange: Codable {
 }
 
 enum Emotion: String, Codable {
+    case neutral = "neutral"
     case joy = "joy"
     case sadness = "sadness"
     case anger = "anger"

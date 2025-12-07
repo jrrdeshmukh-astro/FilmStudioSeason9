@@ -75,6 +75,7 @@ struct Entity3D: Identifiable, Codable {
     let rotation: SIMD3<Float>
     let scale: SIMD3<Float>
     let material: MaterialConfig?
+    let isEmotional: Bool?
     
     init(
         id: UUID = UUID(),
@@ -83,7 +84,8 @@ struct Entity3D: Identifiable, Codable {
         position: SIMD3<Float> = [0, 0, 0],
         rotation: SIMD3<Float> = [0, 0, 0],
         scale: SIMD3<Float> = [1, 1, 1],
-        material: MaterialConfig? = nil
+        material: MaterialConfig? = nil,
+        isEmotional: Bool? = nil
     ) {
         self.id = id
         self.name = name
@@ -92,6 +94,7 @@ struct Entity3D: Identifiable, Codable {
         self.rotation = rotation
         self.scale = scale
         self.material = material
+        self.isEmotional = isEmotional
     }
 }
 
@@ -107,15 +110,18 @@ struct MaterialConfig: Codable {
     let color: ColorRGB
     let metallic: Float
     let roughness: Float
+    let emissive: Bool
     
     init(
         color: ColorRGB = ColorRGB(r: 0.8, g: 0.8, b: 0.8),
         metallic: Float = 0.0,
-        roughness: Float = 0.5
+        roughness: Float = 0.5,
+        emissive: Bool = false
     ) {
         self.color = color
         self.metallic = metallic
         self.roughness = roughness
+        self.emissive = emissive
     }
 }
 
@@ -169,13 +175,22 @@ struct DirectionalLight: Codable {
 struct EnvironmentConfig: Codable {
     let skybox: String? // Skybox image name
     let backgroundColor: ColorRGB
+    let fogEnabled: Bool
+    let fogColor: ColorRGB
+    let fogDistance: Float
     
     init(
         skybox: String? = nil,
-        backgroundColor: ColorRGB = ColorRGB(r: 0.1, g: 0.1, b: 0.1)
+        backgroundColor: ColorRGB = ColorRGB(r: 0.1, g: 0.1, b: 0.1),
+        fogEnabled: Bool = false,
+        fogColor: ColorRGB = ColorRGB(r: 0.8, g: 0.8, b: 0.9),
+        fogDistance: Float = 10.0
     ) {
         self.skybox = skybox
         self.backgroundColor = backgroundColor
+        self.fogEnabled = fogEnabled
+        self.fogColor = fogColor
+        self.fogDistance = fogDistance
     }
 }
 

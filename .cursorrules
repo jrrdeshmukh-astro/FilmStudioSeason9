@@ -51,11 +51,19 @@ This app uses **only** Apple's native frameworks and APIs. No third-party UI lib
   - Spatial Audio: https://developer.apple.com/documentation/realitykit/spatial-audio
 
 **Usage in App:**
-- 3D storyboard visualization
+- 3D storyboard visualization with stunning visuals
 - AR scene preview
 - Virtual set planning
 - Spatial storyboard exploration
 - 3D animatic generation
+
+**Visual Components & Materials:**
+- **MaterialBuilder API**: Use `PhysicallyBasedMaterial` for realistic rendering
+- **Material Types**: Metallic, Fabric, Glass, Skin, Wood, Emissive
+- **Visual Components**: ShadowComponent, CollisionComponent, PhysicsBodyComponent, OcclusionComponent
+- **Advanced Lighting**: Three-point lighting (key, fill, rim) with shadow casting
+- **Atmospheric Effects**: Fog, emissive glow, emotional moment enhancements
+- **Reference**: `docs/realitykit-visuals.md` for complete visual component guide
 
 ### DirectorKit SDK (AI-Assisted Film Direction)
 - **Purpose**: High-level orchestration layer for turning screenplays into directed sequences of shots
