@@ -119,6 +119,34 @@ This app uses **only** Apple's native frameworks and APIs. No third-party UI lib
 - Integrate with DirectorKit for shot planning
 - Export voice over tracks for final production
 
+### Music Generation
+- **Purpose**: Generate appropriate music for productions based on emotional context and scene characteristics
+- **Core Functionality**:
+  - Music generation based on scene emotions
+  - Tempo and key mapping from emotional context
+  - Instrument selection based on scene mood
+  - Background music for productions
+  - Sound design and atmospheres
+- **Framework**: **AudioKit** (open-source, native Swift/iOS)
+  - Synthesis: Oscillators, filters, effects
+  - Sequencing: MIDI sequencing and playback
+  - Effects: Reverb, delay, distortion, compression
+  - Real-time: Low-latency audio processing
+  - SwiftUI Integration: Native SwiftUI support
+- **Services**:
+  - `MusicGenerationService`: Generates music using AudioKit based on emotional context
+- **Integration Points**:
+  - Production Pipeline: Add music to productions automatically
+  - Emotional Context: Map emotions to music parameters (tempo, key, instruments)
+  - AVFoundation: Export generated music as audio assets
+- **Reference Document**: `docs/music-generation.md` for complete integration guide
+
+**Usage in App:**
+- Generate background music for productions
+- Create emotional scoring based on scene context
+- Match music tempo to scene pacing
+- Export music as audio assets for final production
+
 ### Design System
 - **Human Interface Guidelines (HIG)** - Apple's design standards
   - HIG Hub: https://developer.apple.com/design/human-interface-guidelines
@@ -398,6 +426,8 @@ FilmStudioPilot/
 │       ├── RedditClient.swift (Reddit API integration)
 │       ├── LemmyClient.swift (Lemmy API integration)
 │       └── SocialMediaTasteService.swift (aggregate taste analysis from social data)
+│   └── Music/
+│       └── MusicGenerationService.swift (AudioKit-based music generation)
 ├── Observers/
 │   ├── MediaStateObserver.swift (observes MediaWatchState changes)
 │   ├── ProductionTriggerObserver.swift (triggers story generation)
@@ -416,7 +446,9 @@ FilmStudioPilot/
     │   ├── stanislavski.md
     │   ├── meisner.md
     │   └── method_strasberg.md
-    └── social-media-apis.md (open source social media API integration guide)
+    ├── social-media-apis.md (open source social media API integration guide)
+    ├── music-generation.md (AudioKit music generation guide)
+    └── realitykit-visuals.md (RealityKit visual components guide)
 ```
 
 ---

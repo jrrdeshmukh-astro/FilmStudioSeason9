@@ -15,6 +15,7 @@ An Apple TV-like experience for discovering and watching AI-generated film produ
 - **Timeline Composition**: AVFoundation-based video timeline creation
 - **Voice Over & Dialogue Rigging**: Character voice profiles, dialogue timing, emotional delivery, and acting technique integration
 - **Character Backstory**: Comprehensive character development with Stanislavski objectives, relationships, and emotional range
+- **Music Generation**: AI-powered music generation using AudioKit for scene-appropriate scoring
 - **Native Apple Stack**: Built entirely with SwiftUI, AVKit, AVFoundation, RealityKit, and Core Media
 
 ## Setup
