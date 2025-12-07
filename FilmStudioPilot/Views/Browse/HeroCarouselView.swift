@@ -6,6 +6,9 @@
 //
 
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct HeroCarouselView: View {
     let productions: [Production]
@@ -22,17 +25,23 @@ struct HeroCarouselView: View {
                 .tag(index)
             }
         }
+        #if os(iOS)
         .tabViewStyle(.page)
+        #endif
         .frame(height: 500)
+        #if os(iOS)
         .onAppear {
             setupPageControl()
         }
+        #endif
     }
     
+    #if os(iOS)
     private func setupPageControl() {
         UIPageControl.appearance().currentPageIndicatorTintColor = .white
         UIPageControl.appearance().pageIndicatorTintColor = .gray
     }
+    #endif
 }
 
 struct HeroCard: View {

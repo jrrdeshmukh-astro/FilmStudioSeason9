@@ -7,8 +7,14 @@
 
 import SwiftUI
 import RealityKit
+#if canImport(ARKit)
 import ARKit
+#endif
+#if canImport(UIKit)
+import UIKit
+#endif
 
+#if os(iOS)
 struct ARPreviewView: View {
     let scene3D: Scene3D
     @Environment(\.dismiss) private var dismiss
@@ -69,7 +75,28 @@ struct ARViewContainer: UIViewRepresentable {
         // Update AR view if needed
     }
 }
+#else
+// ARKit is iOS-only, provide placeholder for other platforms
+struct ARPreviewView: View {
+    let scene3D: Scene3D
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        VStack {
+            Text("AR Preview")
+                .font(.title)
+            Text("ARKit is only available on iOS")
+                .foregroundColor(.secondary)
+            Button("Close") {
+                dismiss()
+            }
+            .padding()
+        }
+    }
+}
+#endif
 
+#if os(iOS)
 #Preview {
     ARPreviewView(
         scene3D: Scene3D(
@@ -80,4 +107,5 @@ struct ARViewContainer: UIViewRepresentable {
         )
     )
 }
+#endif
 

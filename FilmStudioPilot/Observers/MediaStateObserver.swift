@@ -53,15 +53,18 @@ class MediaStateObserver {
     func checkSkipStreak(watchState: MediaWatchState) async {
         if watchState.skippedProductions.count >= 3 && 
            watchState.skippedProductions.count != lastSkippedCount {
-            await handleSkipStreak(skippedProductions: watchState.skippedProductions)
-            lastSkippedCount = watchState.skippedProductions.count
+            let count = watchState.skippedProductions.count
+            let tasteProfile = getTasteProfile()
+            await handleSkipStreak(count: count, tasteProfile: tasteProfile)
+            lastSkippedCount = count
         }
     }
     
     /// Call this when view counts change (from SwiftUI onChange)
     func checkRepeatViewing(watchState: MediaWatchState) async {
-        for (productionId, count) in watchState.viewCounts where count >= 2 {
-            await handleRepeatView(productionId: productionId)
+        for (productionId, viewCount) in watchState.viewCounts where viewCount >= 2 {
+            let tasteProfile = getTasteProfile()
+            await handleRepeatView(productionId: productionId, viewCount: viewCount, tasteProfile: tasteProfile)
         }
     }
     

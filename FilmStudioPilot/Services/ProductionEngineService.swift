@@ -15,11 +15,13 @@ class ProductionEngineService: ObservableObject {
     private let tasteAnalysisService: TasteAnalysisService
     private let directorKitService: DirectorKitService
     private let scene3DService: Scene3DService
+    private let voiceOverService: VoiceOverService
     
     init(tasteAnalysisService: TasteAnalysisService) {
         self.tasteAnalysisService = tasteAnalysisService
         self.scene3DService = Scene3DService()
-        self.directorKitService = DirectorKitService(scene3DService: scene3DService)
+        self.voiceOverService = VoiceOverService()
+        self.directorKitService = DirectorKitService(scene3DService: scene3DService, voiceOverService: voiceOverService)
     }
     
     func generateStory(

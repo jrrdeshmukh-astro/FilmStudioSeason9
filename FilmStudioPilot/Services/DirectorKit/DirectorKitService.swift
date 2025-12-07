@@ -17,7 +17,7 @@ class DirectorKitService: ObservableObject {
     private let scene3DService: Scene3DService
     private let voiceOverService: VoiceOverService
     
-    init(scene3DService: Scene3DService, voiceOverService: VoiceOverService = VoiceOverService()) {
+    init(scene3DService: Scene3DService, voiceOverService: VoiceOverService) {
         self.scene3DService = scene3DService
         self.voiceOverService = voiceOverService
     }
@@ -342,6 +342,14 @@ class DirectorKitService: ObservableObject {
             groups[block.character, default: []].append(block)
         }
         return groups
+    }
+    
+    /// Find character backstory for a character name
+    /// TODO: Implement with model context when available
+    private func findCharacterBackstory(for characterName: String, in screenplay: Screenplay?) -> CharacterBackstory? {
+        // This would query SwiftData for CharacterBackstory matching characterName
+        // For now, return nil until model context is available
+        return nil
     }
     
     // MARK: - Timeline Composition

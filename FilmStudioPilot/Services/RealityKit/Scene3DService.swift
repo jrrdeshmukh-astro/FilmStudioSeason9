@@ -8,6 +8,10 @@
 import Foundation
 import RealityKit
 import simd
+import Combine
+#if canImport(UIKit)
+import UIKit
+#endif
 
 @MainActor
 class Scene3DService: ObservableObject {
@@ -231,14 +235,16 @@ class Scene3DService: ObservableObject {
     private func configureEnvironmentLighting(rootEntity: Entity, lighting: LightingConfig) {
         // Main directional light
         if let directionalLight = lighting.directionalLight {
-            let lightEntity = DirectionalLight()
-            lightEntity.light.color = .init(
-                red: directionalLight.color.r,
-                green: directionalLight.color.g,
-                blue: directionalLight.color.b
-            )
-            lightEntity.light.intensity = directionalLight.intensity
-            lightEntity.light.shadow = .init(maximumDistance: 10.0, depthBias: 2.0)
+            let lightEntity = Entity()
+            lightEntity.components.set(DirectionalLightComponent(
+                color: .init(
+                    red: directionalLight.color.r,
+                    green: directionalLight.color.g,
+                    blue: directionalLight.color.b
+                ),
+                intensity: directionalLight.intensity,
+                shadow: .init(maximumDistance: 10.0, depthBias: 2.0)
+            ))
             lightEntity.position = simd_float3(
                 directionalLight.direction.x * 5,
                 directionalLight.direction.y * 5,
@@ -249,17 +255,21 @@ class Scene3DService: ObservableObject {
         }
         
         // Add ambient light for fill
-        let ambientLight = DirectionalLight()
-        ambientLight.light.color = .init(white: 1.0)
-        ambientLight.light.intensity = lighting.ambientIntensity
+        let ambientLight = Entity()
+        ambientLight.components.set(DirectionalLightComponent(
+            color: .init(white: 1.0),
+            intensity: lighting.ambientIntensity
+        ))
         ambientLight.position = simd_float3(0, 5, 0)
         ambientLight.look(at: simd_float3(0, 0, 0), from: ambientLight.position, relativeTo: nil)
         rootEntity.addChild(ambientLight)
         
         // Add rim light for dramatic effect
-        let rimLight = DirectionalLight()
-        rimLight.light.color = .init(red: 0.8, green: 0.9, blue: 1.0)
-        rimLight.light.intensity = 0.3
+        let rimLight = Entity()
+        rimLight.components.set(DirectionalLightComponent(
+            color: .init(red: 0.8, green: 0.9, blue: 1.0),
+            intensity: 0.3
+        ))
         rimLight.position = simd_float3(-3, 2, 3)
         rimLight.look(at: simd_float3(0, 0, 0), from: rimLight.position, relativeTo: nil)
         rootEntity.addChild(rimLight)
@@ -325,9 +335,14 @@ class Scene3DService: ObservableObject {
             return modelEntity
             
         case .light:
-            let light = DirectionalLight()
-            light.name = entity3D.name
-            return light
+            let lightEntity = Entity()
+            lightEntity.name = entity3D.name
+            lightEntity.components.set(DirectionalLightComponent(
+                color: .init(white: 1.0),
+                intensity: 1.0
+            ))
+            lightEntity.position = entity3D.position
+            return lightEntity
             
         case .camera:
             let camera = PerspectiveCamera()
@@ -351,7 +366,7 @@ class Scene3DService: ObservableObject {
         } else if lowercased.contains("chair") {
             return MeshResource.generateBox(width: 0.5, height: 1.0, depth: 0.5)
         } else if lowercased.contains("lamp") {
-            return MeshResource.generateCylinder(radius: 0.05, height: 1.0)
+            return MeshResource.generateCylinder(height: 1.0, radius: 0.05)
         } else {
             return MeshResource.generateBox(size: 0.5)
         }
@@ -392,9 +407,9 @@ class Scene3DService: ObservableObject {
     }
     
     /// Add visual components for enhanced rendering
-    private func addVisualComponents(to entity: ModelEntity, entityType: Entity3D.EntityType) {
-        // Add shadow component for realistic shadows
-        entity.components.set(ShadowComponent(shadow: .init(opacity: 0.5)))
+    private func addVisualComponents(to entity: ModelEntity, entityType: EntityType) {
+        // Note: Shadows are handled by DirectionalLightComponent.shadow property
+        // No separate ShadowComponent exists in RealityKit
         
         // Add collision component for interaction
         entity.components.set(CollisionComponent(shapes: [.generateBox(size: entity.scale)]))
@@ -408,8 +423,8 @@ class Scene3DService: ObservableObject {
             ))
         }
         
-        // Add occlusion component for realistic depth
-        entity.components.set(OcclusionComponent())
+        // Note: OcclusionComponent doesn't exist in RealityKit
+        // Depth and occlusion are handled automatically by the rendering engine
     }
     
     /// Create stunning materials using MaterialBuilder API
@@ -420,6 +435,7 @@ class Scene3DService: ObservableObject {
         var material = PhysicallyBasedMaterial()
         
         // Base color
+        #if canImport(UIKit)
         material.baseColor = .init(
             texture: nil,
             color: UIColor(
@@ -429,15 +445,26 @@ class Scene3DService: ObservableObject {
                 alpha: CGFloat(config.color.a)
             )
         )
+        #else
+        material.baseColor = .init(
+            texture: nil,
+            color: .init(
+                red: Double(config.color.r),
+                green: Double(config.color.g),
+                blue: Double(config.color.b),
+                alpha: Double(config.color.a)
+            )
+        )
+        #endif
         
         // Metallic and roughness
         material.metallic = PhysicallyBasedMaterial.Metallic(
             texture: nil,
-            scalar: config.metallic
+            scalar: Float(config.metallic)
         )
         material.roughness = PhysicallyBasedMaterial.Roughness(
             texture: nil,
-            scalar: config.roughness
+            scalar: Float(config.roughness)
         )
         
         // Add specular for more realistic reflections
@@ -456,6 +483,7 @@ class Scene3DService: ObservableObject {
         
         // Add emissive for glowing materials
         if config.emissive {
+            #if canImport(UIKit)
             material.emissiveColor = .init(
                 texture: nil,
                 color: UIColor(
@@ -465,6 +493,17 @@ class Scene3DService: ObservableObject {
                     alpha: 1.0
                 )
             )
+            #else
+            material.emissiveColor = .init(
+                texture: nil,
+                color: .init(
+                    red: Double(config.color.r * 0.5),
+                    green: Double(config.color.g * 0.5),
+                    blue: Double(config.color.b * 0.5),
+                    alpha: 1.0
+                )
+            )
+            #endif
         }
         
         return material
@@ -480,6 +519,7 @@ class Scene3DService: ObservableObject {
         
         switch materialType {
         case .metallic:
+            #if canImport(UIKit)
             material.baseColor = .init(
                 texture: nil,
                 color: UIColor(
@@ -489,6 +529,17 @@ class Scene3DService: ObservableObject {
                     alpha: 1.0
                 )
             )
+            #else
+            material.baseColor = .init(
+                texture: nil,
+                color: .init(
+                    red: Double(color.r),
+                    green: Double(color.g),
+                    blue: Double(color.b),
+                    alpha: 1.0
+                )
+            )
+            #endif
             material.metallic = PhysicallyBasedMaterial.Metallic(
                 texture: nil,
                 scalar: 0.9
@@ -503,6 +554,7 @@ class Scene3DService: ObservableObject {
             )
             
         case .fabric:
+            #if canImport(UIKit)
             material.baseColor = .init(
                 texture: nil,
                 color: UIColor(
@@ -512,6 +564,17 @@ class Scene3DService: ObservableObject {
                     alpha: 1.0
                 )
             )
+            #else
+            material.baseColor = .init(
+                texture: nil,
+                color: .init(
+                    red: Double(color.r),
+                    green: Double(color.g),
+                    blue: Double(color.b),
+                    alpha: 1.0
+                )
+            )
+            #endif
             material.metallic = PhysicallyBasedMaterial.Metallic(
                 texture: nil,
                 scalar: 0.0
@@ -520,11 +583,10 @@ class Scene3DService: ObservableObject {
                 texture: nil,
                 scalar: 0.8
             )
-            material.sheen = PhysicallyBasedMaterial.Sheen(
-                tint: .init(white: 0.1, alpha: 1.0)
-            )
+            // Note: Sheen is not available in PhysicallyBasedMaterial, using roughness instead
             
         case .glass:
+            #if canImport(UIKit)
             material.baseColor = .init(
                 texture: nil,
                 color: UIColor(
@@ -534,6 +596,17 @@ class Scene3DService: ObservableObject {
                     alpha: 0.3
                 )
             )
+            #else
+            material.baseColor = .init(
+                texture: nil,
+                color: .init(
+                    red: Double(color.r),
+                    green: Double(color.g),
+                    blue: Double(color.b),
+                    alpha: 0.3
+                )
+            )
+            #endif
             material.metallic = PhysicallyBasedMaterial.Metallic(
                 texture: nil,
                 scalar: 0.0
@@ -542,9 +615,10 @@ class Scene3DService: ObservableObject {
                 texture: nil,
                 scalar: 0.0
             )
-            material.transmission = 0.95
+            // Note: Transmission is not a direct property, using low roughness and alpha for transparency
             
         case .skin:
+            #if canImport(UIKit)
             material.baseColor = .init(
                 texture: nil,
                 color: UIColor(
@@ -554,6 +628,17 @@ class Scene3DService: ObservableObject {
                     alpha: 1.0
                 )
             )
+            #else
+            material.baseColor = .init(
+                texture: nil,
+                color: .init(
+                    red: Double(color.r),
+                    green: Double(color.g),
+                    blue: Double(color.b),
+                    alpha: 1.0
+                )
+            )
+            #endif
             material.metallic = PhysicallyBasedMaterial.Metallic(
                 texture: nil,
                 scalar: 0.0
@@ -562,18 +647,10 @@ class Scene3DService: ObservableObject {
                 texture: nil,
                 scalar: 0.6
             )
-            material.subsurface = PhysicallyBasedMaterial.Subsurface(
-                scattering: .init(
-                    color: UIColor(
-                        red: CGFloat(color.r * 0.8),
-                        green: CGFloat(color.g * 0.7),
-                        blue: CGFloat(color.b * 0.7),
-                        alpha: 1.0
-                    )
-                )
-            )
+            // Note: Subsurface scattering is not directly available, using appropriate roughness
             
         case .wood:
+            #if canImport(UIKit)
             material.baseColor = .init(
                 texture: nil,
                 color: UIColor(
@@ -583,6 +660,17 @@ class Scene3DService: ObservableObject {
                     alpha: 1.0
                 )
             )
+            #else
+            material.baseColor = .init(
+                texture: nil,
+                color: .init(
+                    red: Double(color.r),
+                    green: Double(color.g),
+                    blue: Double(color.b),
+                    alpha: 1.0
+                )
+            )
+            #endif
             material.metallic = PhysicallyBasedMaterial.Metallic(
                 texture: nil,
                 scalar: 0.0
@@ -593,6 +681,7 @@ class Scene3DService: ObservableObject {
             )
             
         case .emissive:
+            #if canImport(UIKit)
             material.baseColor = .init(
                 texture: nil,
                 color: UIColor(
@@ -611,6 +700,26 @@ class Scene3DService: ObservableObject {
                     alpha: 1.0
                 )
             )
+            #else
+            material.baseColor = .init(
+                texture: nil,
+                color: .init(
+                    red: Double(color.r),
+                    green: Double(color.g),
+                    blue: Double(color.b),
+                    alpha: 1.0
+                )
+            )
+            material.emissiveColor = .init(
+                texture: nil,
+                color: .init(
+                    red: Double(color.r),
+                    green: Double(color.g),
+                    blue: Double(color.b),
+                    alpha: 1.0
+                )
+            )
+            #endif
             material.metallic = PhysicallyBasedMaterial.Metallic(
                 texture: nil,
                 scalar: 0.0
@@ -623,6 +732,7 @@ class Scene3DService: ObservableObject {
         
         // Add emotional glow effect
         if isEmotional {
+            #if canImport(UIKit)
             material.emissiveColor = .init(
                 texture: nil,
                 color: UIColor(
@@ -632,6 +742,17 @@ class Scene3DService: ObservableObject {
                     alpha: 1.0
                 )
             )
+            #else
+            material.emissiveColor = .init(
+                texture: nil,
+                color: .init(
+                    red: Double(color.r * 0.3),
+                    green: Double(color.g * 0.3),
+                    blue: Double(color.b * 0.3),
+                    alpha: 1.0
+                )
+            )
+            #endif
         }
         
         return material
