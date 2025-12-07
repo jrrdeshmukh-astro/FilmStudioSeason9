@@ -21,13 +21,13 @@ struct ContentView: View {
                     .onAppear {
                         checkOnboardingStatus()
                     }
-            }
-        }
+                    }
+                }
         .onChange(of: tasteProfiles.count) { _, newValue in
             hasCompletedOnboarding = newValue > 0
         }
     }
-    
+
     private func checkOnboardingStatus() {
         hasCompletedOnboarding = !tasteProfiles.isEmpty
     }

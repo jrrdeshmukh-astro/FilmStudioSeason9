@@ -236,15 +236,35 @@ class Scene3DService: ObservableObject {
         // Main directional light
         if let directionalLight = lighting.directionalLight {
             let lightEntity = Entity()
+            #if canImport(UIKit)
             lightEntity.components.set(DirectionalLightComponent(
-                color: .init(
-                    red: directionalLight.color.r,
-                    green: directionalLight.color.g,
-                    blue: directionalLight.color.b
+                color: UIColor(
+                    red: CGFloat(directionalLight.color.r),
+                    green: CGFloat(directionalLight.color.g),
+                    blue: CGFloat(directionalLight.color.b),
+                    alpha: 1.0
                 ),
                 intensity: directionalLight.intensity,
-                shadow: .init(maximumDistance: 10.0, depthBias: 2.0)
+                shadow: DirectionalLightComponent.Shadow(
+                    maximumDistance: 10.0,
+                    depthBias: 2.0
+                )
             ))
+            #else
+            lightEntity.components.set(DirectionalLightComponent(
+                color: .init(
+                    red: Double(directionalLight.color.r),
+                    green: Double(directionalLight.color.g),
+                    blue: Double(directionalLight.color.b),
+                    alpha: 1.0
+                ),
+                intensity: directionalLight.intensity,
+                shadow: DirectionalLightComponent.Shadow(
+                    maximumDistance: 10.0,
+                    depthBias: 2.0
+                )
+            ))
+            #endif
             lightEntity.position = simd_float3(
                 directionalLight.direction.x * 5,
                 directionalLight.direction.y * 5,
@@ -256,20 +276,34 @@ class Scene3DService: ObservableObject {
         
         // Add ambient light for fill
         let ambientLight = Entity()
+        #if canImport(UIKit)
         ambientLight.components.set(DirectionalLightComponent(
-            color: .init(white: 1.0),
+            color: UIColor(white: 1.0, alpha: 1.0),
             intensity: lighting.ambientIntensity
         ))
+        #else
+        ambientLight.components.set(DirectionalLightComponent(
+            color: .init(white: 1.0, alpha: 1.0),
+            intensity: lighting.ambientIntensity
+        ))
+        #endif
         ambientLight.position = simd_float3(0, 5, 0)
         ambientLight.look(at: simd_float3(0, 0, 0), from: ambientLight.position, relativeTo: nil)
         rootEntity.addChild(ambientLight)
         
         // Add rim light for dramatic effect
         let rimLight = Entity()
+        #if canImport(UIKit)
         rimLight.components.set(DirectionalLightComponent(
-            color: .init(red: 0.8, green: 0.9, blue: 1.0),
+            color: UIColor(red: 0.8, green: 0.9, blue: 1.0, alpha: 1.0),
             intensity: 0.3
         ))
+        #else
+        rimLight.components.set(DirectionalLightComponent(
+            color: .init(red: 0.8, green: 0.9, blue: 1.0, alpha: 1.0),
+            intensity: 0.3
+        ))
+        #endif
         rimLight.position = simd_float3(-3, 2, 3)
         rimLight.look(at: simd_float3(0, 0, 0), from: rimLight.position, relativeTo: nil)
         rootEntity.addChild(rimLight)
@@ -337,10 +371,17 @@ class Scene3DService: ObservableObject {
         case .light:
             let lightEntity = Entity()
             lightEntity.name = entity3D.name
+            #if canImport(UIKit)
             lightEntity.components.set(DirectionalLightComponent(
-                color: .init(white: 1.0),
+                color: UIColor(white: 1.0, alpha: 1.0),
                 intensity: 1.0
             ))
+            #else
+            lightEntity.components.set(DirectionalLightComponent(
+                color: .init(white: 1.0, alpha: 1.0),
+                intensity: 1.0
+            ))
+            #endif
             lightEntity.position = entity3D.position
             return lightEntity
             
@@ -434,74 +475,80 @@ class Scene3DService: ObservableObject {
         // Use MaterialBuilder for advanced materials
         var material = PhysicallyBasedMaterial()
         
-        // Base color
+        // Base color - parameter order: color before texture
         #if canImport(UIKit)
         material.baseColor = .init(
-            texture: nil,
             color: UIColor(
                 red: CGFloat(config.color.r),
                 green: CGFloat(config.color.g),
                 blue: CGFloat(config.color.b),
                 alpha: CGFloat(config.color.a)
-            )
+            ),
+            texture: nil
         )
         #else
         material.baseColor = .init(
-            texture: nil,
             color: .init(
                 red: Double(config.color.r),
                 green: Double(config.color.g),
                 blue: Double(config.color.b),
                 alpha: Double(config.color.a)
-            )
+            ),
+            texture: nil
         )
         #endif
         
-        // Metallic and roughness
+        // Metallic and roughness - parameter order: scale before texture
         material.metallic = PhysicallyBasedMaterial.Metallic(
-            texture: nil,
-            scalar: Float(config.metallic)
+            scale: Float(config.metallic),
+            texture: nil
         )
         material.roughness = PhysicallyBasedMaterial.Roughness(
-            texture: nil,
-            scalar: Float(config.roughness)
+            scale: Float(config.roughness),
+            texture: nil
         )
         
         // Add specular for more realistic reflections
+        #if canImport(UIKit)
         material.specular = PhysicallyBasedMaterial.Specular(
-            texture: nil,
-            color: .init(white: 0.5, alpha: 1.0)
+            color: UIColor(white: 0.5, alpha: 1.0),
+            texture: nil
         )
+        #else
+        material.specular = PhysicallyBasedMaterial.Specular(
+            color: .init(white: 0.5, alpha: 1.0),
+            texture: nil
+        )
+        #endif
         
         // Add clearcoat for glossy surfaces
         if config.metallic > 0.5 {
             material.clearcoat = PhysicallyBasedMaterial.Clearcoat(
-                amount: 0.3,
-                roughness: 0.1
+                amount: 0.3
             )
         }
         
-        // Add emissive for glowing materials
+        // Add emissive for glowing materials - parameter order: color before texture
         if config.emissive {
             #if canImport(UIKit)
             material.emissiveColor = .init(
-                texture: nil,
                 color: UIColor(
                     red: CGFloat(config.color.r * 0.5),
                     green: CGFloat(config.color.g * 0.5),
                     blue: CGFloat(config.color.b * 0.5),
                     alpha: 1.0
-                )
+                ),
+                texture: nil
             )
             #else
             material.emissiveColor = .init(
-                texture: nil,
                 color: .init(
                     red: Double(config.color.r * 0.5),
                     green: Double(config.color.g * 0.5),
                     blue: Double(config.color.b * 0.5),
                     alpha: 1.0
-                )
+                ),
+                texture: nil
             )
             #endif
         }
@@ -521,212 +568,211 @@ class Scene3DService: ObservableObject {
         case .metallic:
             #if canImport(UIKit)
             material.baseColor = .init(
-                texture: nil,
                 color: UIColor(
                     red: CGFloat(color.r),
                     green: CGFloat(color.g),
                     blue: CGFloat(color.b),
                     alpha: 1.0
-                )
+                ),
+                texture: nil
             )
             #else
             material.baseColor = .init(
-                texture: nil,
                 color: .init(
                     red: Double(color.r),
                     green: Double(color.g),
                     blue: Double(color.b),
                     alpha: 1.0
-                )
+                ),
+                texture: nil
             )
             #endif
             material.metallic = PhysicallyBasedMaterial.Metallic(
-                texture: nil,
-                scalar: 0.9
+                scale: 0.9,
+                texture: nil
             )
             material.roughness = PhysicallyBasedMaterial.Roughness(
-                texture: nil,
-                scalar: 0.1
+                scale: 0.1,
+                texture: nil
             )
             material.clearcoat = PhysicallyBasedMaterial.Clearcoat(
-                amount: 0.5,
-                roughness: 0.05
+                amount: 0.5
             )
             
         case .fabric:
             #if canImport(UIKit)
             material.baseColor = .init(
-                texture: nil,
                 color: UIColor(
                     red: CGFloat(color.r),
                     green: CGFloat(color.g),
                     blue: CGFloat(color.b),
                     alpha: 1.0
-                )
+                ),
+                texture: nil
             )
             #else
             material.baseColor = .init(
-                texture: nil,
                 color: .init(
                     red: Double(color.r),
                     green: Double(color.g),
                     blue: Double(color.b),
                     alpha: 1.0
-                )
+                ),
+                texture: nil
             )
             #endif
             material.metallic = PhysicallyBasedMaterial.Metallic(
-                texture: nil,
-                scalar: 0.0
+                scale: 0.0,
+                texture: nil
             )
             material.roughness = PhysicallyBasedMaterial.Roughness(
-                texture: nil,
-                scalar: 0.8
+                scale: 0.8,
+                texture: nil
             )
             // Note: Sheen is not available in PhysicallyBasedMaterial, using roughness instead
             
         case .glass:
             #if canImport(UIKit)
             material.baseColor = .init(
-                texture: nil,
                 color: UIColor(
                     red: CGFloat(color.r),
                     green: CGFloat(color.g),
                     blue: CGFloat(color.b),
                     alpha: 0.3
-                )
+                ),
+                texture: nil
             )
             #else
             material.baseColor = .init(
-                texture: nil,
                 color: .init(
                     red: Double(color.r),
                     green: Double(color.g),
                     blue: Double(color.b),
                     alpha: 0.3
-                )
+                ),
+                texture: nil
             )
             #endif
             material.metallic = PhysicallyBasedMaterial.Metallic(
-                texture: nil,
-                scalar: 0.0
+                scale: 0.0,
+                texture: nil
             )
             material.roughness = PhysicallyBasedMaterial.Roughness(
-                texture: nil,
-                scalar: 0.0
+                scale: 0.0,
+                texture: nil
             )
             // Note: Transmission is not a direct property, using low roughness and alpha for transparency
             
         case .skin:
             #if canImport(UIKit)
             material.baseColor = .init(
-                texture: nil,
                 color: UIColor(
                     red: CGFloat(color.r),
                     green: CGFloat(color.g),
                     blue: CGFloat(color.b),
                     alpha: 1.0
-                )
+                ),
+                texture: nil
             )
             #else
             material.baseColor = .init(
-                texture: nil,
                 color: .init(
                     red: Double(color.r),
                     green: Double(color.g),
                     blue: Double(color.b),
                     alpha: 1.0
-                )
+                ),
+                texture: nil
             )
             #endif
             material.metallic = PhysicallyBasedMaterial.Metallic(
-                texture: nil,
-                scalar: 0.0
+                scale: 0.0,
+                texture: nil
             )
             material.roughness = PhysicallyBasedMaterial.Roughness(
-                texture: nil,
-                scalar: 0.6
+                scale: 0.6,
+                texture: nil
             )
             // Note: Subsurface scattering is not directly available, using appropriate roughness
             
         case .wood:
             #if canImport(UIKit)
             material.baseColor = .init(
-                texture: nil,
                 color: UIColor(
                     red: CGFloat(color.r),
                     green: CGFloat(color.g),
                     blue: CGFloat(color.b),
                     alpha: 1.0
-                )
+                ),
+                texture: nil
             )
             #else
             material.baseColor = .init(
-                texture: nil,
                 color: .init(
                     red: Double(color.r),
                     green: Double(color.g),
                     blue: Double(color.b),
                     alpha: 1.0
-                )
+                ),
+                texture: nil
             )
             #endif
             material.metallic = PhysicallyBasedMaterial.Metallic(
-                texture: nil,
-                scalar: 0.0
+                scale: 0.0,
+                texture: nil
             )
             material.roughness = PhysicallyBasedMaterial.Roughness(
-                texture: nil,
-                scalar: 0.7
+                scale: 0.7,
+                texture: nil
             )
             
         case .emissive:
             #if canImport(UIKit)
             material.baseColor = .init(
-                texture: nil,
                 color: UIColor(
                     red: CGFloat(color.r),
                     green: CGFloat(color.g),
                     blue: CGFloat(color.b),
                     alpha: 1.0
-                )
+                ),
+                texture: nil
             )
             material.emissiveColor = .init(
-                texture: nil,
                 color: UIColor(
                     red: CGFloat(color.r),
                     green: CGFloat(color.g),
                     blue: CGFloat(color.b),
                     alpha: 1.0
-                )
+                ),
+                texture: nil
             )
             #else
             material.baseColor = .init(
-                texture: nil,
                 color: .init(
                     red: Double(color.r),
                     green: Double(color.g),
                     blue: Double(color.b),
                     alpha: 1.0
-                )
+                ),
+                texture: nil
             )
             material.emissiveColor = .init(
-                texture: nil,
                 color: .init(
                     red: Double(color.r),
                     green: Double(color.g),
                     blue: Double(color.b),
                     alpha: 1.0
-                )
+                ),
+                texture: nil
             )
             #endif
             material.metallic = PhysicallyBasedMaterial.Metallic(
-                texture: nil,
-                scalar: 0.0
+                scale: 0.0,
+                texture: nil
             )
             material.roughness = PhysicallyBasedMaterial.Roughness(
-                texture: nil,
-                scalar: 0.5
+                scale: 0.5,
+                texture: nil
             )
         }
         
@@ -734,23 +780,23 @@ class Scene3DService: ObservableObject {
         if isEmotional {
             #if canImport(UIKit)
             material.emissiveColor = .init(
-                texture: nil,
                 color: UIColor(
                     red: CGFloat(color.r * 0.3),
                     green: CGFloat(color.g * 0.3),
                     blue: CGFloat(color.b * 0.3),
                     alpha: 1.0
-                )
+                ),
+                texture: nil
             )
             #else
             material.emissiveColor = .init(
-                texture: nil,
                 color: .init(
                     red: Double(color.r * 0.3),
                     green: Double(color.g * 0.3),
                     blue: Double(color.b * 0.3),
                     alpha: 1.0
-                )
+                ),
+                texture: nil
             )
             #endif
         }
