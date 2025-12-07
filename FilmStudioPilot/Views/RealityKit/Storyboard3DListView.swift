@@ -112,10 +112,16 @@ struct Storyboard3DDetailView: View {
             }
             .padding()
         }
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         .fullScreenCover(isPresented: $showAR) {
             ARPreviewView(scene3D: scene3D)
         }
+        #else
+        .sheet(isPresented: $showAR) {
+            ARPreviewView(scene3D: scene3D)
+        }
+        #endif
     }
 }
 

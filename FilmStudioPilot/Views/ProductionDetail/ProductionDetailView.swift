@@ -91,10 +91,16 @@ struct ProductionDetailView: View {
                 .padding()
             }
         }
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         .fullScreenCover(isPresented: $showPlayer) {
             VideoPlayerView(production: production)
         }
+        #else
+        .sheet(isPresented: $showPlayer) {
+            VideoPlayerView(production: production)
+        }
+        #endif
         .sheet(isPresented: $show3DStoryboard) {
             if !scenes3D.isEmpty {
                 Storyboard3DListView(scenes: scenes3D)

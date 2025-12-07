@@ -7,7 +7,12 @@
 
 import Foundation
 import RealityKit
+#if canImport(UIKit)
 import UIKit
+#endif
+#if canImport(AppKit)
+import AppKit
+#endif
 
 struct Scene3D: Identifiable, Codable {
     let id: UUID
@@ -139,9 +144,17 @@ struct ColorRGB: Codable {
         self.a = a
     }
     
+    #if canImport(UIKit)
     var uiColor: UIColor {
         UIColor(red: CGFloat(r), green: CGFloat(g), blue: CGFloat(b), alpha: CGFloat(a))
     }
+    #endif
+    
+    #if canImport(AppKit)
+    var nsColor: NSColor {
+        NSColor(red: CGFloat(r), green: CGFloat(g), blue: CGFloat(b), alpha: CGFloat(a))
+    }
+    #endif
 }
 
 struct LightingConfig: Codable {
