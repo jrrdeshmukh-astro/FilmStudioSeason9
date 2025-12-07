@@ -10,18 +10,21 @@ import SwiftData
 
 struct OnboardingView: View {
     @Environment(\.modelContext) private var modelContext
-    @StateObject private var movieService: MovieMetadataService
-    @State private var selectedMovies: Set<Int> = []
-    @State private var isLoading = false
+    @State private var selectedMovies: Set<UUID> = []
     @State private var hasCompleted = false
+    @State private var searchText = ""
     
     @Query private var tasteProfiles: [TasteProfile]
     
-    init() {
-        // Load API keys from Info.plist
-        let tmdbKey = Bundle.main.object(forInfoDictionaryKey: "TMDbAPIKey") as? String ?? ""
-        let omdbKey = Bundle.main.object(forInfoDictionaryKey: "OMDbAPIKey") as? String
-        _movieService = StateObject(wrappedValue: MovieMetadataService(tmdbAPIKey: tmdbKey, omdbAPIKey: omdbKey))
+    private var availableMovies: [LocalMovie] {
+        if searchText.isEmpty {
+            return PopularMovies.movies
+        } else {
+            return PopularMovies.movies.filter { movie in
+                movie.title.localizedCaseInsensitiveContains(searchText) ||
+                movie.genre.localizedCaseInsensitiveContains(searchText)
+            }
+        }
     }
     
     var body: some View {
@@ -34,9 +37,6 @@ struct OnboardingView: View {
                 }
             }
             .navigationTitle("Welcome to FilmStudio")
-            .task {
-                await movieService.loadPopularMovies()
-            }
         }
     }
     
@@ -53,13 +53,18 @@ struct OnboardingView: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal)
                 
-                if movieService.isLoading {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                } else {
-                    movieGrid
+                // Search bar
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundStyle(.secondary)
+                    TextField("Search movies or genres...", text: $searchText)
                 }
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(10)
+                .padding(.horizontal)
+                
+                movieGrid
                 
                 Button(action: completeOnboarding) {
                     Text("Continue")
@@ -82,7 +87,7 @@ struct OnboardingView: View {
             GridItem(.flexible()),
             GridItem(.flexible())
         ], spacing: 16) {
-            ForEach(movieService.popularMovies.prefix(30)) { movie in
+            ForEach(availableMovies) { movie in
                 MovieSelectionCard(
                     movie: movie,
                     isSelected: selectedMovies.contains(movie.id)
@@ -113,7 +118,7 @@ struct OnboardingView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
-    private func toggleSelection(_ movieId: Int) {
+    private func toggleSelection(_ movieId: UUID) {
         if selectedMovies.contains(movieId) {
             selectedMovies.remove(movieId)
         } else {
@@ -124,14 +129,12 @@ struct OnboardingView: View {
     private func completeOnboarding() {
         guard selectedMovies.count >= 5 else { return }
         
-        isLoading = true
+        // Get selected movies
+        let selectedMoviesList = PopularMovies.movies.filter { selectedMovies.contains($0.id) }
         
-        // Get selected movie metadata
-        let selectedMovieMetadata = movieService.popularMovies.filter { selectedMovies.contains($0.id) }
-        
-        // Build taste profile
+        // Build taste profile from local movies
         let tasteAnalysisService = TasteAnalysisService()
-        let profile = tasteAnalysisService.buildTasteProfile(from: selectedMovieMetadata)
+        let profile = tasteAnalysisService.buildTasteProfileFromLocalMovies(selectedMoviesList)
         
         // Save to SwiftData
         modelContext.insert(profile)
@@ -142,53 +145,79 @@ struct OnboardingView: View {
         } catch {
             print("Error saving taste profile: \(error)")
         }
-        
-        isLoading = false
     }
 }
 
 struct MovieSelectionCard: View {
-    let movie: MovieMetadata
+    let movie: LocalMovie
     let isSelected: Bool
     let action: () -> Void
     
     var body: some View {
         Button(action: action) {
             VStack(spacing: 8) {
-                AsyncImage(url: URL(string: movie.posterURL ?? "")) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.3))
-                }
-                .frame(height: 180)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 3)
-                )
-                .overlay(
-                    Group {
-                        if isSelected {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.white)
-                                .background(Color.accentColor)
-                                .clipShape(Circle())
-                                .padding(8)
+                // Placeholder poster with genre color
+                Rectangle()
+                    .fill(genreColor(movie.genre))
+                    .frame(height: 180)
+                    .overlay(
+                        VStack {
+                            Image(systemName: "film")
+                                .font(.system(size: 40))
+                                .foregroundColor(.white.opacity(0.8))
+                            if let year = movie.year {
+                                Text("\(year)")
+                                    .font(.caption)
+                                    .foregroundColor(.white.opacity(0.7))
+                            }
                         }
-                    },
-                    alignment: .topTrailing
-                )
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 3)
+                    )
+                    .overlay(
+                        Group {
+                            if isSelected {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.white)
+                                    .background(Color.accentColor)
+                                    .clipShape(Circle())
+                                    .padding(8)
+                            }
+                        },
+                        alignment: .topTrailing
+                    )
                 
                 Text(movie.title)
                     .font(.caption)
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
+                
+                Text(movie.genre)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
         }
         .buttonStyle(.plain)
+    }
+    
+    private func genreColor(_ genre: String) -> Color {
+        switch genre.lowercased() {
+        case "science fiction", "sci-fi":
+            return Color.blue.opacity(0.7)
+        case "drama":
+            return Color.purple.opacity(0.7)
+        case "thriller", "horror":
+            return Color.red.opacity(0.7)
+        case "action":
+            return Color.orange.opacity(0.7)
+        case "crime":
+            return Color.gray.opacity(0.7)
+        default:
+            return Color.indigo.opacity(0.7)
+        }
     }
 }
 

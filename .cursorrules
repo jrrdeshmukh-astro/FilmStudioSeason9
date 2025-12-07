@@ -171,42 +171,27 @@ This app uses **only** Apple's native frameworks and APIs. No third-party UI lib
 - User watches same production multiple times → identify strong preference → generate similar content
 - User pauses at specific moments → identify emotional beats → incorporate in future stories
 
-### External APIs (Movie Database & Taste Analysis)
+### External APIs (Open Source Social Media for Taste Analysis)
 - **Note:** These are REST APIs accessed via native `URLSession` (no third-party networking libraries)
-- **Purpose:** Enrich user taste profiles, provide movie metadata, build taste clusters
+- **Purpose:** Enrich user taste profiles from open-source social media, build taste clusters
+- **No API Keys Required:** All use OAuth 2.0 (user consent) or public endpoints
 
-**OMDb API (Open Movie Database)**
-- Documentation: https://www.omdbapi.com/
-- Type: Simple REST JSON
-- Auth: Free API key (email sign-up, request limits)
-- Base URL: `https://www.omdbapi.com/`
-- Key Endpoints:
-  - `?apikey=KEY&t=TITLE` - Get movie by title
-  - `?apikey=KEY&s=SEARCH` - Search multiple movies
-  - `?apikey=KEY&i=IMDB_ID` - Get by IMDb ID
-- Data Provided: Title, year, genres, ratings (IMDb/RottenTomatoes), plot, cast, director
-- Use Case: Quick movie lookups, basic metadata enrichment
-
-**TMDb (The Movie Database) - Primary API**
-- Documentation Hub: https://developer.themoviedb.org/docs/getting-started
-- Getting Started: https://developer.themoviedb.org/reference/getting-started
-- Type: REST API v3/v4
-- Auth: Free account + API key (Bearer token or api_key param)
-- Base URL: `https://api.themoviedb.org/3`
-- Key Endpoints:
-  - `GET /movie/popular` - Popular movies
-  - `GET /trending/movie/week` - Trending movies (taste signals)
-  - `GET /movie/{movie_id}` - Full movie details
-  - `GET /movie/{movie_id}/similar` - Similar movies
-  - `GET /movie/{movie_id}/recommendations` - Recommendations
-  - `GET /search/movie` - Search movies
-- Data Provided: Movies, TV, people, images, keywords, genres, watch providers, trending data
-- Use Case: Primary source for taste analysis, trending data, recommendations, genre clustering
-
-**Additional Taste APIs (Optional)**
-- TasteDive API: Similar movies/music/games based on title (mood neighborhoods)
-- Trakt API: User watch history, trending charts, social viewing stats
-- Reference: https://apidog.com/blog/free-movie-apis/
+**Open Source Social Media APIs (Taste Analysis)**
+- **Mastodon API**: Federated social network for user interests and trending topics
+  - Documentation: https://docs.joinmastodon.org/api/
+  - Streaming API: https://docs.joinmastodon.org/api/streaming/
+  - Use for: Hashtag analysis, timeline preferences, favorite content
+- **Reddit API**: Subreddit interests and content preferences
+  - Documentation: https://www.reddit.com/dev/api/
+  - OAuth Guide: https://github.com/reddit-archive/reddit/wiki/OAuth2
+  - Use for: Subreddit → genre mapping, post analysis, upvote patterns
+- **Lemmy API**: Open-source Reddit alternative
+  - Documentation: https://join-lemmy.org/api/
+  - Use for: Community interests, federated content analysis
+- **ActivityPub Protocol**: Universal federated social web protocol
+  - Specification: https://www.w3.org/TR/activitypub/
+  - Use for: Unified taste analysis across multiple platforms
+- **Reference Document**: `docs/social-media-apis.md` for complete integration guide
 
 **API Integration Architecture:**
 - Use native `URLSession` for all HTTP requests
@@ -223,9 +208,11 @@ This app uses **only** Apple's native frameworks and APIs. No third-party UI lib
 - **SwiftUI Forms** - Use `Form`, `Toggle`, `Slider`, `Picker` for initial preferences
 - **Navigation** - Use `NavigationStack` or `NavigationSplitView`
 - **State Management** - Use `@State`, `@Observable`, `@Environment`
-- **API Integration** - Use `MovieMetadataService` to fetch trending/popular movies for selection
-- **Taste Analysis** - Build initial `TasteProfile` from user selections using TMDb genre/keyword data
-- Reference: SwiftUI Controls & Indicators, HIG Components, TMDb API docs
+- **Local Movie Selection** - Pre-defined popular movies list (no API needed)
+- **Search Functionality** - Native SwiftUI `TextField` for movie/genre search
+- **Taste Analysis** - Build initial `TasteProfile` from user selections using local genre data
+- **Optional Social Media** - User can optionally connect Reddit/Mastodon accounts (OAuth)
+- Reference: SwiftUI Controls & Indicators, HIG Components
 
 ### Browse & Discover (Apple TV-Like Home Screen)
 - **Hero Carousel** - Use SwiftUI `TabView` with page style for featured productions
@@ -366,7 +353,7 @@ FilmStudioPilot/
 │   ├── Production.swift (completed productions for viewing)
 │   ├── StoryIdea.swift
 │   ├── Pipeline.swift (background processing stages)
-│   ├── MovieMetadata.swift
+│   ├── LocalMovie.swift (local movie representation, no API needed)
 │   ├── TasteProfile.swift
 │   ├── Observable/
 │   │   ├── MediaWatchState.swift (@Observable)
@@ -388,36 +375,40 @@ FilmStudioPilot/
 ├── Services/
 │   ├── MediaService.swift (AVFoundation)
 │   ├── AIService.swift (AI/LLM integration)
-│   ├── MovieMetadataService.swift (TMDb/OMDb wrapper)
-│   ├── TasteAnalysisService.swift (taste clustering & analysis)
+│   ├── TasteAnalysisService.swift (taste clustering & analysis from local data and social media)
 │   ├── StoryAnalyzer.swift (uses acting method docs)
 │   ├── ProductionEngineService.swift (background production orchestration)
 │   ├── RealityKit/
 │   │   └── Scene3DService.swift (3D scene generation and RealityKit entity building)
-│   └── DirectorKit/
-│       ├── DirectorKitService.swift (screenplay-to-shots orchestration)
-│       └── OSFParser.swift (Open Screenplay Format XML parsing)
-│   └── VoiceOver/
-│       └── VoiceOverService.swift (dialogue rigging and voice profile generation)
+│   ├── DirectorKit/
+│   │   ├── DirectorKitService.swift (screenplay-to-shots orchestration)
+│   │   └── OSFParser.swift (Open Screenplay Format XML parsing)
+│   ├── VoiceOver/
+│   │   └── VoiceOverService.swift (dialogue rigging and voice profile generation)
+│   └── SocialMedia/
+│       ├── MastodonClient.swift (Mastodon API integration)
+│       ├── RedditClient.swift (Reddit API integration)
+│       ├── LemmyClient.swift (Lemmy API integration)
+│       └── SocialMediaTasteService.swift (aggregate taste analysis from social data)
 ├── Observers/
 │   ├── MediaStateObserver.swift (observes MediaWatchState changes)
 │   ├── ProductionTriggerObserver.swift (triggers story generation)
 │   └── TasteProfileObserver.swift (updates taste profile from state)
 ├── Network/
-│   ├── APIClient.swift (base URLSession wrapper)
-│   ├── TMDbClient.swift (TMDb API implementation)
-│   ├── OMDbClient.swift (OMDb API implementation)
-│   └── Models/
-│       ├── TMDbModels.swift
-│       └── OMDbModels.swift
+│   ├── APIClient.swift (base URLSession wrapper for social media APIs)
+│   └── SocialMedia/
+│       ├── RedditClient.swift (Reddit API - OAuth, no key needed)
+│       ├── MastodonClient.swift (Mastodon API - OAuth, no key needed)
+│       └── LemmyClient.swift (Lemmy API - OAuth, no key needed)
 ├── Utilities/
 │   ├── Extensions/
 │   └── Helpers/
 └── docs/ (domain knowledge for AI context)
-    └── acting/
-        ├── stanislavski.md
-        ├── meisner.md
-        └── method_strasberg.md
+    ├── acting/
+    │   ├── stanislavski.md
+    │   ├── meisner.md
+    │   └── method_strasberg.md
+    └── social-media-apis.md (open source social media API integration guide)
 ```
 
 ---
@@ -434,29 +425,28 @@ FilmStudioPilot/
 
 **Example Structure:**
 ```swift
-protocol MovieAPIClient {
-    func searchMovies(query: String) async throws -> [MovieMetadata]
-    func getMovieDetails(id: String) async throws -> MovieMetadata
-    func getTrendingMovies() async throws -> [MovieMetadata]
+protocol SocialMediaClient {
+    func getUserInterests(userId: String) async throws -> [Interest]
+    func getTrendingTopics() async throws -> [Topic]
 }
 
-// TMDb implementation
-class TMDbClient: MovieAPIClient {
-    private let apiKey: String
-    private let baseURL = "https://api.themoviedb.org/3"
+// Reddit implementation (OAuth, no API key)
+class RedditClient: SocialMediaClient {
+    private let accessToken: String // From OAuth
+    private let baseURL = "https://oauth.reddit.com"
     
-    func getTrendingMovies() async throws -> [TMDbMovie] {
-        // URLSession implementation
+    func getUserInterests(userId: String) async throws -> [Interest] {
+        // URLSession with OAuth token
     }
 }
 
-// OMDb implementation  
-class OMDbClient: MovieAPIClient {
-    private let apiKey: String
-    private let baseURL = "https://www.omdbapi.com"
+// Mastodon implementation (OAuth, no API key)
+class MastodonClient: SocialMediaClient {
+    private let instanceURL: String
+    private let accessToken: String // From OAuth
     
-    func searchMovies(query: String) async throws -> [OMDbMovie] {
-        // URLSession implementation
+    func getUserInterests(userId: String) async throws -> [Interest] {
+        // URLSession with OAuth token
     }
 }
 ```
@@ -483,53 +473,51 @@ class OMDbClient: MovieAPIClient {
 
 **TasteProfile Model**
 - Track user's liked movies, genres, themes
-- Build taste vectors from TMDb genre IDs, keywords, popularity scores
+- Build taste vectors from social media data (subreddits, hashtags, communities)
 - Cluster similar tastes using genre/keyword similarity
-- Update profile based on user interactions
+- Update profile based on user interactions and social media activity
 
-**TrendingTasteEngine**
-- Pull from `GET /trending/movie/week` endpoint
-- Combine with user's watchlist/likes
+**Social Media Taste Engine**
+- Analyze user's social media activity (Reddit subreddits, Mastodon hashtags)
+- Map social interests to movie genres
 - Build taste clusters (genre-based, theme-based, mood-based)
 - Generate story prompts aligned with user's taste profile
 
 **Integration Points:**
-- Onboarding: Use taste selection to seed initial profile
+- Onboarding: User manually selects favorite movies/genres (no API needed)
+- Social Media: Connect accounts to enhance taste profile
 - Story Generation: Reference taste clusters when generating ideas
-- Recommendations: Use TMDb similar/recommendations endpoints
-- Discovery: Show trending movies matching user's taste profile
+- Discovery: Show productions matching user's taste profile
 
-### API Key Management & Security
+### OAuth & Authentication (Social Media APIs)
 
-**Storage:**
-- **Never** commit API keys to version control
-- Use Xcode build configuration files (`.xcconfig`) for different environments
-- Store keys in `Info.plist` or environment variables
-- Consider using Keychain for sensitive keys (though API keys are less sensitive than auth tokens)
+**OAuth 2.0 Implementation:**
+- Use native `ASWebAuthenticationSession` for OAuth flows
+- Store access tokens securely in Keychain
+- No API keys needed - user grants permission via OAuth
+- User can revoke access at any time
 
 **Best Practices:**
 ```swift
-// Example: Load from Info.plist
-struct APIKeys {
-    static var tmdbKey: String {
-        guard let path = Bundle.main.path(forResource: "Info", ofType: "plist"),
-              let plist = NSDictionary(contentsOfFile: path),
-              let key = plist["TMDbAPIKey"] as? String else {
-            fatalError("TMDb API key not found in Info.plist")
-        }
-        return key
-    }
+// Example: OAuth flow with ASWebAuthenticationSession
+let authURL = URL(string: "https://oauth.reddit.com/authorize?...")!
+let session = ASWebAuthenticationSession(
+    url: authURL,
+    callbackURLScheme: "filmstudiopilot"
+) { callbackURL, error in
+    // Handle OAuth callback, extract access token
+    // Store in Keychain
 }
 ```
 
 **Rate Limiting:**
-- Respect API rate limits (TMDb: 40 requests per 10 seconds)
+- Respect API rate limits (varies by platform)
 - Implement request queuing/throttling
 - Cache responses to minimize API calls
-- Monitor API usage and provide user feedback if limits are hit
+- Handle rate limit errors gracefully
 
 **Error Handling:**
-- Handle 401 (unauthorized) - invalid/expired API key
+- Handle 401 (unauthorized) - token expired, re-authenticate
 - Handle 429 (too many requests) - rate limit exceeded
 - Handle network errors gracefully
 - Provide fallback behavior when APIs are unavailable
@@ -794,8 +782,9 @@ import Foundation       // XML parsing and utilities
 - **Performance direction** → `docs/acting/meisner.md` for actor guidance
 - **Character development** → `docs/acting/method_strasberg.md` for deep character work
 - **Scene analysis** → All acting method docs for breaking down generated content
-- **Movie API integration** → TMDb Getting Started docs, OMDb API docs
-- **Taste analysis** → TMDb trending/recommendations endpoints documentation
+- **Social Media API integration** → Reddit API docs, Mastodon API docs (see `docs/social-media-apis.md`)
+- **Taste analysis** → Social media data analysis patterns
+- **OAuth implementation** → ASWebAuthenticationSession documentation
 - **API error handling** → URLSession documentation, HTTP status code handling
 - **DirectorKit** → Open Screenplay Format (OSF) specification: https://github.com/OpenScreenplayFormat/osf-sdk
 - **AVFoundation Composition** → AVFoundation Programming Guide, AVMutableComposition documentation
@@ -988,18 +977,19 @@ import Foundation       // XML parsing and utilities
 
 ### External APIs
 
-**TMDb (The Movie Database)**
-- Getting Started: https://developer.themoviedb.org/docs/getting-started
-- API Reference: https://developer.themoviedb.org/reference/getting-started
-- Movie Details: https://developer.themoviedb.org/reference/movie-details
-- Trending Endpoint: `GET /trending/movie/week`
+**Reddit API**
+- API Documentation: https://www.reddit.com/dev/api/
+- OAuth Guide: https://github.com/reddit-archive/reddit/wiki/OAuth2
+- App Registration: https://www.reddit.com/prefs/apps
 
-**OMDb (Open Movie Database)**
-- API Documentation: https://www.omdbapi.com/
-- Base URL: `https://www.omdbapi.com/`
+**Mastodon API**
+- API Documentation: https://docs.joinmastodon.org/api/
+- Streaming API: https://docs.joinmastodon.org/api/streaming/
+- Instance List: https://joinmastodon.org/servers
 
-**Additional Movie APIs**
-- Free Movie APIs Roundup: https://apidog.com/blog/free-movie-apis/
+**ActivityPub Protocol**
+- Specification: https://www.w3.org/TR/activitypub/
+- ActivityStreams: https://www.w3.org/TR/activitystreams-core/
 
 ### Domain Knowledge (Acting Methods)
 

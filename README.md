@@ -19,37 +19,21 @@ An Apple TV-like experience for discovering and watching AI-generated film produ
 
 ## Setup
 
-### 1. API Keys
+### No API Keys Required! 🎉
 
-You'll need API keys for movie metadata:
+This app uses **zero third-party APIs that require keys**. Everything is:
+- **Native Apple frameworks** (SwiftUI, AVKit, AVFoundation, RealityKit)
+- **Open-source social media APIs** (OAuth-based, user consent)
+- **Local data** (pre-defined movie lists, user input)
 
-1. **TMDb API Key** (Required):
-   - Sign up at https://www.themoviedb.org/signup
-   - Get your API key from https://www.themoviedb.org/settings/api
-   - Add to `Info.plist` as `TMDbAPIKey`
+### Optional: Social Media Integration
 
-2. **OMDb API Key** (Optional):
-   - Sign up at https://www.omdbapi.com/apikey.aspx
-   - Add to `Info.plist` as `OMDbAPIKey`
+To enhance taste analysis, users can optionally connect:
+- **Reddit** (OAuth - no API key needed)
+- **Mastodon** (OAuth - no API key needed)
+- **Lemmy** (OAuth - no API key needed)
 
-### 2. Info.plist Configuration
-
-Add your API keys to `Info.plist`:
-
-```xml
-<key>TMDbAPIKey</key>
-<string>YOUR_TMDB_API_KEY</string>
-<key>OMDbAPIKey</key>
-<string>YOUR_OMDB_API_KEY</string>
-```
-
-### 3. Update OnboardingView
-
-In `Views/Onboarding/OnboardingView.swift`, replace the placeholder API key:
-
-```swift
-let tmdbKey = Bundle.main.object(forInfoDictionaryKey: "TMDbAPIKey") as? String ?? ""
-```
+All social media integration uses OAuth 2.0 with user consent - no developer API keys required.
 
 ## Architecture
 
@@ -57,7 +41,7 @@ let tmdbKey = Bundle.main.object(forInfoDictionaryKey: "TMDbAPIKey") as? String 
 - `Production`: Completed productions for viewing
 - `StoryIdea`: Generated story ideas with acting method structure
 - `TasteProfile`: User preferences and taste analysis
-- `MovieMetadata`: Movie data from TMDb/OMDb
+- `LocalMovie`: Local movie representation (no external API needed)
 - `Scene3D`: 3D scene representation with entities, lighting, and camera positions
 - `DirectorProject`: Complete film project with screenplay and directed scenes
 - `Screenplay`: Screenplay data with OSF XML support
@@ -75,8 +59,7 @@ let tmdbKey = Bundle.main.object(forInfoDictionaryKey: "TMDbAPIKey") as? String 
 - `ProductionEngine`: Orchestrates background production
 
 ### Services
-- `MovieMetadataService`: Fetches movie data from APIs
-- `TasteAnalysisService`: Builds and updates taste profiles
+- `TasteAnalysisService`: Builds and updates taste profiles from local movie selections and social media data
 - `ProductionEngineService`: Generates stories and productions
 - `Scene3DService`: Generates 3D scenes from story beats and builds RealityKit entities
 - `DirectorKitService`: Orchestrates screenplay-to-shots conversion with camera setups and blocking
@@ -110,20 +93,18 @@ FilmStudioPilot/
 │   ├── Production.swift
 │   ├── StoryIdea.swift
 │   ├── TasteProfile.swift
-│   ├── MovieMetadata.swift
+│   ├── LocalMovie.swift
 │   └── Observable/
 │       ├── MediaWatchState.swift
 │       ├── ProductionState.swift
 │       ├── MediaInteractionState.swift
 │       └── ProductionEngine.swift
 ├── Services/
-│   ├── MovieMetadataService.swift
 │   ├── TasteAnalysisService.swift
 │   └── ProductionEngineService.swift
 ├── Network/
 │   ├── APIClient.swift
-│   ├── TMDbClient.swift
-│   └── OMDbClient.swift
+│   └── SocialMedia/ (OAuth-based, no API keys)
 ├── Observers/
 │   └── MediaStateObserver.swift
 └── Views/
@@ -139,6 +120,17 @@ FilmStudioPilot/
 - Xcode 15.0+
 - Swift 5.9+
 - Device with ARKit support (for AR preview features)
+
+## Social Media Taste Analysis
+
+The app can integrate with open-source social media platforms to enhance taste analysis:
+
+- **Reddit API**: Analyze user's subreddit subscriptions for genre preferences
+- **Mastodon API**: Analyze hashtags, favorites, and timeline for content interests
+- **ActivityPub Protocol**: Universal support for federated social networks
+- **Privacy-First**: User consent required, OAuth-based, read-only access
+
+See `docs/social-media-apis.md` for complete integration guide.
 
 ## RealityKit Integration
 

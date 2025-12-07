@@ -9,33 +9,24 @@ import Foundation
 
 class TasteAnalysisService {
     
-    func buildTasteProfile(from movies: [MovieMetadata]) -> TasteProfile {
+    /// Build taste profile from local movies (no API needed)
+    func buildTasteProfileFromLocalMovies(_ movies: [LocalMovie]) -> TasteProfile {
         var genreScores: [String: Double] = [:]
         var themes: [String] = []
         
-        // Map TMDb genre IDs to genre names (simplified - in production, use full genre map)
-        let genreMap: [Int: String] = [
-            28: "Action", 12: "Adventure", 16: "Animation",
-            35: "Comedy", 80: "Crime", 99: "Documentary",
-            18: "Drama", 10751: "Family", 14: "Fantasy",
-            36: "History", 27: "Horror", 10402: "Music",
-            9648: "Mystery", 10749: "Romance", 878: "Science Fiction",
-            10770: "TV Movie", 53: "Thriller", 10752: "War", 37: "Western"
-        ]
-        
         for movie in movies {
             // Update genre preferences
-            for genreID in movie.genreIDs {
-                if let genreName = genreMap[genreID] {
-                    genreScores[genreName, default: 0.0] += 1.0
-                }
-            }
+            genreScores[movie.genre, default: 0.0] += 1.0
             
-            // Extract themes from overview (simplified - in production, use NLP)
-            if let overview = movie.overview {
-                let keywords = extractKeywords(from: overview)
+            // Extract themes from user description if available
+            if let description = movie.userDescription {
+                let keywords = extractKeywords(from: description)
                 themes.append(contentsOf: keywords)
             }
+            
+            // Extract themes from title (simple keyword extraction)
+            let titleKeywords = extractKeywords(from: movie.title)
+            themes.append(contentsOf: titleKeywords)
         }
         
         // Normalize genre scores to 0.0-1.0 range
